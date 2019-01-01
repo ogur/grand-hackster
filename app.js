@@ -54,7 +54,14 @@ const HEAT = {
 };
 
 const fl = Math.floor.bind(Math);
-
+const rnd = Math.random.bind(Math);
+const randOf = (arr) => {
+    return arr[fl(rnd() * arr.length)];
+};
+const randBetween = (lowerInput, upperInput) => {
+    let [lower, upper] = [lowerInput, upperInput].sort();
+    return lower + fl(rnd() * (upper - lower));
+};
 /**
  * @type {CanvasRenderingContext2D | WebGLRenderingContext}
  */
@@ -89,122 +96,10 @@ const keys = {
     'm': {name: 'm', heat: 0, isDestroyed: false, isPushed: false, row: 2, pos: 6, group: 2},
 };
 
-document.addEventListener('keydown', (event) => {
-    if (event.repeat) {
-        return;
-    }
-    const keyName = event.key.toLowerCase();
-    const key = keys[keyName];
-
-    if (key && !key.isDestroyed) {
-        key.isPushed = true;
-
-        key.heat = Math.min(key.heat + 1, HEAT.max);
-        if (key.heat === HEAT.max) {
-            key.isDestroyed = true;
-        }
-
-        for (let timesIdx = 0; timesIdx < key.heat; timesIdx++) {
-            writeConsole();
-        }
-    }
-});
-
-document.addEventListener('keyup', (event) => {
-    const keyName = event.key.toLowerCase();
-    const key = keys[keyName];
-
-    if (key) {
-        key.isPushed = false;
-    }
-});
-
-function getHeatStyle(heat) {
-    const degree = heat / HEAT.max;
-
-    if (degree === 1) {
-        return 'rgb(0, 0, 0)';
-    } else if (degree < 0.5) {
-        return `rgb(255, 255, ${fl(255 * (1 - degree * 2))})`;
-    } else {
-        return `rgb(255, ${fl(255 * (1 - (degree - 0.5) * 2))}, 0)`;
-    }
-}
-
-const consoleAreas = [
-    [], [], [],
-];
-
-function getCodeChunk(group) {
-    // const chars = [
-    //     'abstract',
-    //     'arguments',
-    //     'await*',
-    //     'boolean',
-    //     'break',
-    //     'byte',
-    //     'case',
-    //     'catch',
-    //     'char',
-    //     'class*',
-    //     'const',
-    //     'continue',
-    //     'debugger',
-    //     'default',
-    //     'delete',
-    //     'do',
-    //     'double',
-    //     'else',
-    //     'enum*',
-    //     'eval',
-    //     'export*',
-    //     'extends*',
-    //     'false',
-    //     'final',
-    //     'finally',
-    //     'float',
-    //     'for',
-    //     'function',
-    //     'goto',
-    //     'if',
-    //     'implements',
-    //     'import*',
-    //     'in',
-    //     'instanceof',
-    //     'int',
-    //     'interface',
-    //     'let*',
-    //     'long',
-    //     'native',
-    //     'new',
-    //     'null',
-    //     'package',
-    //     'private',
-    //     'protected',
-    //     'public',
-    //     'return',
-    //     'short',
-    //     'static',
-    //     'super*',
-    //     'switch',
-    //     'synchronized',
-    //     'this',
-    //     'throw',
-    //     'throws',
-    //     'transient',
-    //     'true',
-    //     'try',
-    //     'typeof',
-    //     'var',
-    //     'void',
-    //     'volatile',
-    //     'while',
-    //     'with',
-    //     'yield',
-    // ];
-    const chars = [
-        [
-            '𐠀',
+const RACES = {
+    'TOIRPYC': {
+        name: 'Toir Pyc',
+        chars: [
             '𐠁',
             '𐠂',
             '𐠃',
@@ -259,7 +154,10 @@ function getCodeChunk(group) {
             '𐠸',
             '𐠼',
         ],
-        [
+    },
+    'AYNAMSO': {
+        name: 'Aynamso',
+        chars: [
             '𐒀',
             '𐒁',
             '𐒂',
@@ -290,7 +188,10 @@ function getCodeChunk(group) {
             '𐒥',
             '𐒦',
         ],
-        [
+    },
+    'CINUR': {
+        name: 'Cinur',
+        chars: [
             'ᚠ',
             'ᚡ',
             'ᚢ',
@@ -373,57 +274,422 @@ function getCodeChunk(group) {
             'ᛯ',
             'ᛰ',
         ],
-    ];
-
-    return chars[group][fl(Math.random() * chars[group].length)];
-}
-
-function writeConsole(groupIdx) {
-    groupIdx = fl(Math.random() * 3);
-
-
-    const selectedGroup = consoleAreas[groupIdx];
-    if (selectedGroup.length === 0) {
-        selectedGroup.push([]);
+    },
+    'SITI RAGU': {
+        name: 'Siti Ragu',
+        chars: [
+            '𐎀',
+            '𐎁',
+            '𐎂',
+            '𐎃',
+            '𐎄',
+            '𐎅',
+            '𐎆',
+            '𐎇',
+            '𐎈',
+            '𐎉',
+            '𐎊',
+            '𐎋',
+            '𐎌',
+            '𐎍',
+            '𐎎',
+            '𐎏',
+            '𐎐',
+            '𐎑',
+            '𐎒',
+            '𐎓',
+            '𐎔',
+            '𐎕',
+            '𐎖',
+            '𐎗',
+            '𐎘',
+            '𐎙',
+            '𐎚',
+            '𐎛',
+            '𐎜',
+            '𐎝',
+            '𐎟',
+        ],
+    },
+    'NAIVASH': {
+        name: 'Naivash',
+        chars: [
+            '𐑐',
+            '𐑑',
+            '𐑒',
+            '𐑓',
+            '𐑔',
+            '𐑕',
+            '𐑖',
+            '𐑗',
+            '𐑘',
+            '𐑙',
+            '𐑚',
+            '𐑛',
+            '𐑜',
+            '𐑝',
+            '𐑞',
+            '𐑟',
+            '𐑠',
+            '𐑡',
+            '𐑢',
+            '𐑣',
+            '𐑤',
+            '𐑥',
+            '𐑦',
+            '𐑧',
+            '𐑨',
+            '𐑩',
+            '𐑪',
+            '𐑫',
+            '𐑬',
+            '𐑭',
+            '𐑮',
+            '𐑯',
+            '𐑰',
+            '𐑱',
+            '𐑲',
+            '𐑳',
+            '𐑴',
+            '𐑵',
+            '𐑶',
+            '𐑷',
+            '𐑸',
+            '𐑹',
+            '𐑺',
+            '𐑻',
+            '𐑼',
+            '𐑽',
+            '𐑾',
+            '𐑿',
+        ],
+    },
+    'KIPOIHTE': {
+        name: 'Kipoihte',
+        chars: [
+            'ሂ',
+            'ሄ',
+            'ህ',
+            'ሇ',
+            'ሉ',
+            'ሏ',
+            'ሕ',
+            'ሖ',
+            'ሟ',
+            'ሠ',
+            'ሧ',
+            'ረ',
+            'ሱ',
+            'ሴ',
+            'ሹ',
+            'ቄ',
+            'ቊ',
+            'ቍ',
+            'ቐ',
+            'ቖ',
+            'ቤ',
+            'ቯ',
+            'ታ',
+            'ት',
+            'ቶ',
+            'ኀ',
+            'ኆ',
+            'ኊ',
+            'ኋ',
+            'ኍ',
+            'ኖ',
+            'ኚ',
+            'አ',
+            'ኩ',
+            'ኪ',
+            'ኵ',
+            'ው',
+            'ዎ',
+            'ዒ',
+            'ዓ',
+            'ዛ',
+            'ዠ',
+            'ዢ',
+            'ይ',
+            'ዾ',
+            'ጒ',
+            'ጔ',
+            'ጕ',
+            'ጞ',
+            'ጡ',
+            'ጯ',
+            'ጻ',
+            'ጽ',
+            'ፆ',
+            'ፋ',
+            'ፑ',
+            'ፓ',
+            'ፔ',
+            'ፖ',
+            'ፗ',
+            'ፚ',
+            '፦',
+            '፧',
+            '፨',
+            '፩',
+            '፪',
+            '፰',
+            '፲',
+            '፴',
+            '፵',
+            '፶',
+        ]
+    },
+    'SNETTAPELLIA': {
+        name: 'Snettapellia',
+        chars: [
+            '⠈',
+            '⠐',
+            '⠘',
+            '⠠',
+            '⠨',
+            '⠰',
+            '⠸',
+            '⡀',
+            '⡈',
+            '⡐',
+            '⡘',
+            '⡠',
+            '⡨',
+            '⡰',
+            '⡸',
+            '⢀',
+            '⢈',
+            '⢐',
+            '⢘',
+            '⢠',
+            '⢨',
+            '⢰',
+            '⢸',
+            '⣀',
+            '⣈',
+            '⣐',
+            '⣘',
+            '⣠',
+            '⣨',
+            '⣰',
+            '⣸'
+        ]
+    },
+    'KEERG': {
+        name: 'Keerg',
+        chars: [
+            'Ͱ',
+            'ʹ',
+            'ͼ',
+            '΄',
+            'Έ',
+            'Ό',
+            'ΐ',
+            'Δ',
+            'Θ',
+            'Μ',
+            'Π',
+            'Τ',
+            'Ψ',
+            'ά',
+            'ΰ',
+            'δ',
+            'θ',
+            'μ',
+            'π',
+            'τ',
+            'ψ',
+            'ό',
+            'ϐ',
+            'ϔ',
+            'Ϙ',
+            'Ϝ',
+            'Ϡ',
+            'Ϥ',
+            'Ϩ',
+            'Ϭ',
+            'ϰ',
+            'ϴ',
+            'ϸ',
+            'ϼ'
+        ]
+    },
+    'ILLIRY': {
+        name: 'Illiry',
+        chars: [
+            'Ѐ',
+            'Ј',
+            'А',
+            'И',
+            'Р',
+            'Ш',
+            'а',
+            'и',
+            'р',
+            'ш',
+            'ѐ',
+            'ј',
+            'Ѡ',
+            'Ѩ',
+            'Ѱ',
+            'Ѹ',
+            'Ҁ',
+            '҈',
+            'Ґ',
+            'Ҙ',
+            'Ҡ',
+            'Ҩ',
+            'Ұ',
+            'Ҹ',
+            'Ӏ',
+            'ӈ',
+            'Ӑ',
+            'Ә',
+            'Ӡ',
+            'Ө',
+            'Ӱ',
+            'Ӹ'
+        ]
     }
-    const lastRowIdx = selectedGroup.length - 1;
-    const lastRow = selectedGroup[lastRowIdx].slice();
+};
 
-    lastRow.push(getCodeChunk(groupIdx));
-
-    if (Math.random() > 0.8) {
-        lastRow.push(' ');
+document.addEventListener('keydown', (event) => {
+    if (event.repeat) {
+        return;
     }
+    const keyName = event.key.toLowerCase();
+    const key = keys[keyName];
 
-    const colLimit = fl(CONSOLE.lineCols / 3);
+    if (key && !key.isDestroyed) {
+        key.isPushed = true;
 
-    if (lastRow.length > colLimit) {
-        selectedGroup[lastRowIdx] = lastRow.slice(0, colLimit);
-        selectedGroup.push(lastRow.slice(colLimit));
+        key.heat = Math.min(key.heat + 1, HEAT.max);
+        if (key.heat === HEAT.max) {
+            key.isDestroyed = true;
+        }
+
+        // for (let timesIdx = 0; timesIdx < key.heat; timesIdx++) {
+        //     writeConsole();
+        // }
+    }
+});
+
+document.addEventListener('keyup', (event) => {
+    const keyName = event.key.toLowerCase();
+    const key = keys[keyName];
+
+    if (key) {
+        key.isPushed = false;
+    }
+});
+
+function getHeatStyle(heat) {
+    const degree = heat / HEAT.max;
+
+    if (degree === 1) {
+        return 'rgb(0, 0, 0)';
+    } else if (degree < 0.5) {
+        return `rgb(255, 255, ${fl(255 * (1 - degree * 2))})`;
     } else {
-        selectedGroup[lastRowIdx] = lastRow;
-    }
-
-    if (selectedGroup.length > CONSOLE.lineRows) {
-        selectedGroup.shift();
+        return `rgb(255, ${fl(255 * (1 - (degree - 0.5) * 2))}, 0)`;
     }
 }
 
-let lastTimestamp = 0;
+const consoleArea = [];
+
+function getCodeChunk(race) {
+    // const chars = [
+    //     'abstract',
+    //     'arguments',
+    //     'await*',
+    //     'boolean',
+    //     'break',
+    //     'byte',
+    //     'case',
+    //     'catch',
+    //     'char',
+    //     'class*',
+    //     'const',
+    //     'continue',
+    //     'debugger',
+    //     'default',
+    //     'delete',
+    //     'do',
+    //     'double',
+    //     'else',
+    //     'enum*',
+    //     'eval',
+    //     'export*',
+    //     'extends*',
+    //     'false',
+    //     'final',
+    //     'finally',
+    //     'float',
+    //     'for',
+    //     'function',
+    //     'goto',
+    //     'if',
+    //     'implements',
+    //     'import*',
+    //     'in',
+    //     'instanceof',
+    //     'int',
+    //     'interface',
+    //     'let*',
+    //     'long',
+    //     'native',
+    //     'new',
+    //     'null',
+    //     'package',
+    //     'private',
+    //     'protected',
+    //     'public',
+    //     'return',
+    //     'short',
+    //     'static',
+    //     'super*',
+    //     'switch',
+    //     'synchronized',
+    //     'this',
+    //     'throw',
+    //     'throws',
+    //     'transient',
+    //     'true',
+    //     'try',
+    //     'typeof',
+    //     'var',
+    //     'void',
+    //     'volatile',
+    //     'while',
+    //     'with',
+    //     'yield',
+    // ];
+    return race.chars[fl(rnd() * race.chars.length)];
+}
+
+function writeConsole(area, race) {
+    groupIdx = fl(rnd() * 3);
+
+    const selectedAreaRow = fl(area / 3);
+    const selectedAreaCol = area % 3;
+
+    const minRow = selectedAreaRow * CONSOLE.lineRows / 3;
+    const maxRow = minRow + CONSOLE.lineRows / 3;
+    const minCol = selectedAreaCol * CONSOLE.lineCols / 3;
+    const maxCol = minCol + CONSOLE.lineCols / 3;
+
+    const selectedRow = randBetween(minRow, maxRow);
+    const selectedCol = randBetween(minCol, maxCol);
+
+    const selectedCellIdx = selectedRow * CONSOLE.lineCols + selectedCol;
+    consoleArea[selectedCellIdx] = getCodeChunk(race);
+}
+
+let lastTimestampHeat = 0;
+let lastTimestampEnemy = 0;
 
 function draw(timestamp) {
-    if (timestamp - lastTimestamp > 1000) {
-        lastTimestamp = fl(timestamp / 1000) * 1000;
-
-        for (const key of Object.keys(keys)) {
-            if (keys[key].heat > 0 && !keys[key].isDestroyed) {
-                keys[key].heat = Math.max(keys[key].heat - 1, 0);
-            }
-        }
-    }
-
-    // console.log(`timestamp/1000`, timestamp/1000);
-
     ctx.fillStyle = '#003016';
     ctx.fillRect(MAIN_AREA.left, MAIN_AREA.top, MAIN_AREA.width, MAIN_AREA.height);
 
@@ -450,14 +716,14 @@ function draw(timestamp) {
     ctx.fillStyle = '#000';
     ctx.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
 
-    ctx.strokeStyle = '#fff6';
+    ctx.strokeStyle = '#fff1';
     for (let gridX = 0; gridX < CONSOLE.lineCols; gridX++) {
         ctx.strokeRect(CONSOLE.left + gridX * CONSOLE.gridCellWidth, CONSOLE.top, 1, CONSOLE.height);
     }
     for (let gridY = 0; gridY < CONSOLE.lineRows; gridY++) {
         ctx.strokeRect(CONSOLE.left, CONSOLE.top + gridY * CONSOLE.gridCellHeight, CONSOLE.width, 1);
     }
-    ctx.strokeStyle = '#f996';
+    ctx.strokeStyle = '#f993';
     ctx.strokeRect(CONSOLE.left + 25 * CONSOLE.gridCellWidth, CONSOLE.top, 1, CONSOLE.height);
     ctx.strokeRect(CONSOLE.left + 50 * CONSOLE.gridCellWidth, CONSOLE.top, 1, CONSOLE.height);
     ctx.strokeRect(CONSOLE.left, CONSOLE.top + 9 * CONSOLE.gridCellHeight, CONSOLE.width, 1);
@@ -467,22 +733,87 @@ function draw(timestamp) {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ff00';
 
-    for (const groupIdx in consoleAreas) {
-        for (const lineIdx in consoleAreas[groupIdx]) {
-            for (const charIdx in consoleAreas[groupIdx][lineIdx]) {
-                const char = consoleAreas[groupIdx][lineIdx][charIdx];
-                ctx.fillText(char,
-                    CONSOLE.left + groupIdx * fl(CONSOLE.width / 3) + charIdx * CONSOLE.gridCellWidth + 0.5 * CONSOLE.gridCellWidth,
-                    CONSOLE.top + 10 + lineIdx * CONSOLE.gridCellHeight + 2,
-                );
-            }
-        }
+    for (const cellIdx in consoleArea) {
+        // console.log(`cell`, cell);
+        const cell = consoleArea[cellIdx];
+        const cellCol = cellIdx % CONSOLE.lineCols;
+        const cellRow = fl(cellIdx / CONSOLE.lineCols);
+
+        ctx.fillText(cell,
+            CONSOLE.left + cellCol * CONSOLE.gridCellWidth + 0.5 * CONSOLE.gridCellWidth,
+            CONSOLE.top + 10 + cellRow * CONSOLE.gridCellHeight + 2,
+        );
     }
 
     ctx.fillStyle = '#00F';
     ctx.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
-
-    requestAnimationFrame(draw);
 }
 
-requestAnimationFrame(draw);
+function main(timestamp) {
+    const heatInterval = 1000;
+    if (timestamp - lastTimestampHeat > heatInterval) {
+        lastTimestampHeat = fl(timestamp / heatInterval) * heatInterval;
+
+        for (const key of Object.keys(keys)) {
+            if (keys[key].heat > 0 && !keys[key].isDestroyed) {
+                keys[key].heat = Math.max(keys[key].heat - 1, 0);
+            }
+        }
+    }
+
+    const enemyInterval = 200;
+    if (timestamp - lastTimestampEnemy > enemyInterval) {
+        lastTimestampEnemy = fl(timestamp / enemyInterval) * enemyInterval;
+
+        let selectedArea = fl(rnd() * 9);
+        while (currentEnemyPosition[selectedArea] === 0) {
+            selectedArea = fl(rnd() * 9);
+        }
+
+        const goalRaceIdx = Object.keys(currentEnemyPosition).filter((x, i) => !!currentEnemyPosition[i]);
+        const selectedGoalIdx = randOf(goalRaceIdx);
+
+        writeConsole(selectedGoalIdx, RACES[currentEnemyPosition[selectedGoalIdx]]);
+    }
+}
+
+function loop(timestamp) {
+    main(timestamp);
+    draw(timestamp);
+
+    requestAnimationFrame(loop);
+}
+
+const currentEnemyPosition = generateEnemyPosition(4);
+const currentGoal = generateGoal(4);
+
+console.log(`currentEnemyPosition`, currentEnemyPosition);
+console.log(`
+        ${currentGoal.slice(0, 3)}
+        ${currentGoal.slice(3, 6)}
+        ${currentGoal.slice(6, 9)}
+    `.replace(/ /mg, '').replace(/,/mg, ''));
+
+requestAnimationFrame(loop);
+
+
+function generateEnemyPosition(size) {
+    const goal = Object.keys(RACES).sort(() => 0.5 - rnd());
+
+    while (goal.reduce((sum, n) => sum + !!n, 0) > size) {
+        goal[fl(rnd() * 9)] = null;
+    }
+
+    return goal;
+}
+
+function generateGoal(size) {
+    const goal = new Array(9).fill(1);
+
+    while (goal.reduce((sum, n) => sum + n, 0) > size) {
+        goal[fl(Math.random() * 9)] = 0;
+    }
+
+    return goal;
+}
+
