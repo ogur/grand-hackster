@@ -24,14 +24,13 @@ const KEYBOARD = {
     left: 10,
     top: 458,
 };
-console.log(MAIN_AREA, SEC_AREA);
 
 const CONSOLE = {
     top: MAIN_AREA.top + 10,
     left: MAIN_AREA.left + 10,
-    right: MAIN_AREA.right - 310,
+    right: MAIN_AREA.right - 294,
     bottom: MAIN_AREA.bottom - 350,
-    lineCols: 75,
+    lineCols: 72,
     lineRows: 27,
 };
 CONSOLE.width = CONSOLE.right - CONSOLE.left;
@@ -42,7 +41,7 @@ CONSOLE.gridCellHeight = CONSOLE.height / CONSOLE.lineRows;
 
 const TRANSMISSION = {
     top: MAIN_AREA.top + 10,
-    left: MAIN_AREA.right - 300,
+    left: MAIN_AREA.right - 284,
     right: MAIN_AREA.right - 10,
     bottom: MAIN_AREA.bottom - 350,
 };
@@ -263,12 +262,9 @@ const RACES = {
             'ᛤ',
             'ᛥ',
             'ᛦ',
-            'ᛧ',
             'ᛨ',
             'ᛩ',
             'ᛪ',
-            '᛫',
-            '᛬',
             '᛭',
             'ᛮ',
             'ᛯ',
@@ -284,31 +280,25 @@ const RACES = {
             '𐎃',
             '𐎄',
             '𐎅',
-            '𐎆',
             '𐎇',
             '𐎈',
             '𐎉',
             '𐎊',
-            '𐎋',
             '𐎌',
             '𐎍',
             '𐎎',
             '𐎏',
             '𐎐',
-            '𐎑',
             '𐎒',
             '𐎓',
             '𐎔',
             '𐎕',
-            '𐎖',
-            '𐎗',
             '𐎘',
             '𐎙',
             '𐎚',
             '𐎛',
             '𐎜',
             '𐎝',
-            '𐎟',
         ],
     },
     'NAIVASH': {
@@ -438,7 +428,7 @@ const RACES = {
             '፴',
             '፵',
             '፶',
-        ]
+        ],
     },
     'SNETTAPELLIA': {
         name: 'Snettapellia',
@@ -473,16 +463,14 @@ const RACES = {
             '⣠',
             '⣨',
             '⣰',
-            '⣸'
-        ]
+            '⣸',
+        ],
     },
     'KEERG': {
         name: 'Keerg',
         chars: [
             'Ͱ',
-            'ʹ',
             'ͼ',
-            '΄',
             'Έ',
             'Ό',
             'ΐ',
@@ -512,13 +500,12 @@ const RACES = {
             'ϰ',
             'ϴ',
             'ϸ',
-            'ϼ'
-        ]
+            'ϼ',
+        ],
     },
     'ILLIRY': {
         name: 'Illiry',
         chars: [
-            'Ѐ',
             'Ј',
             'А',
             'И',
@@ -549,9 +536,9 @@ const RACES = {
             'Ӡ',
             'Ө',
             'Ӱ',
-            'Ӹ'
-        ]
-    }
+            'Ӹ',
+        ],
+    },
 };
 
 document.addEventListener('keydown', (event) => {
@@ -598,7 +585,7 @@ function getHeatStyle(heat) {
 
 const consoleArea = [];
 
-function getCodeChunk(race) {
+function getEnemyChar(race) {
     // const chars = [
     //     'abstract',
     //     'arguments',
@@ -683,19 +670,22 @@ function writeConsole(area, race) {
     const selectedCol = randBetween(minCol, maxCol);
 
     const selectedCellIdx = selectedRow * CONSOLE.lineCols + selectedCol;
-    consoleArea[selectedCellIdx] = getCodeChunk(race);
+    consoleArea[selectedCellIdx] = getEnemyChar(race);
 }
 
 let lastTimestampHeat = 0;
 let lastTimestampEnemy = 0;
 
 function draw(timestamp) {
+    // draw main bg
     ctx.fillStyle = '#003016';
     ctx.fillRect(MAIN_AREA.left, MAIN_AREA.top, MAIN_AREA.width, MAIN_AREA.height);
 
+    // draw sec bg
     ctx.fillStyle = '#0f0';
     ctx.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
 
+    // draw keyboard
     for (const key of Object.values(keys)) {
         const keyX = MAIN_AREA.left + KEYBOARD.left + key.pos * 100 + key.row * 50;
         const keyY = MAIN_AREA.top + KEYBOARD.top + key.row * 100;
@@ -713,28 +703,31 @@ function draw(timestamp) {
         );
     }
 
+    // draw console bg
     ctx.fillStyle = '#000';
     ctx.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
 
+    // draw console grid
     ctx.strokeStyle = '#fff1';
-    for (let gridX = 0; gridX < CONSOLE.lineCols; gridX++) {
+    for (let gridX = 1; gridX < CONSOLE.lineCols; gridX++) {
         ctx.strokeRect(CONSOLE.left + gridX * CONSOLE.gridCellWidth, CONSOLE.top, 1, CONSOLE.height);
     }
-    for (let gridY = 0; gridY < CONSOLE.lineRows; gridY++) {
+    for (let gridY = 1; gridY < CONSOLE.lineRows; gridY++) {
         ctx.strokeRect(CONSOLE.left, CONSOLE.top + gridY * CONSOLE.gridCellHeight, CONSOLE.width, 1);
     }
+    // draw console grid area boundaries
     ctx.strokeStyle = '#f993';
-    ctx.strokeRect(CONSOLE.left + 25 * CONSOLE.gridCellWidth, CONSOLE.top, 1, CONSOLE.height);
-    ctx.strokeRect(CONSOLE.left + 50 * CONSOLE.gridCellWidth, CONSOLE.top, 1, CONSOLE.height);
-    ctx.strokeRect(CONSOLE.left, CONSOLE.top + 9 * CONSOLE.gridCellHeight, CONSOLE.width, 1);
-    ctx.strokeRect(CONSOLE.left, CONSOLE.top + 18 * CONSOLE.gridCellHeight, CONSOLE.width, 1);
+    ctx.strokeRect(CONSOLE.left + CONSOLE.width / 3, CONSOLE.top, 1, CONSOLE.height);
+    ctx.strokeRect(CONSOLE.left + CONSOLE.width * 2 / 3, CONSOLE.top, 1, CONSOLE.height);
+    ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height / 3, CONSOLE.width, 1);
+    ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height * 2 / 3, CONSOLE.width, 1);
 
+    // draw chars
     ctx.font = '14px monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ff00';
 
     for (const cellIdx in consoleArea) {
-        // console.log(`cell`, cell);
         const cell = consoleArea[cellIdx];
         const cellCol = cellIdx % CONSOLE.lineCols;
         const cellRow = fl(cellIdx / CONSOLE.lineCols);
@@ -745,6 +738,7 @@ function draw(timestamp) {
         );
     }
 
+    // draw transmission
     ctx.fillStyle = '#00F';
     ctx.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
 }
@@ -770,8 +764,8 @@ function main(timestamp) {
             selectedArea = fl(rnd() * 9);
         }
 
-        const goalRaceIdx = Object.keys(currentEnemyPosition).filter((x, i) => !!currentEnemyPosition[i]);
-        const selectedGoalIdx = randOf(goalRaceIdx);
+        const goalRaceIdxList = Object.keys(currentEnemyPosition).filter((x, i) => !!currentEnemyPosition[i]);
+        const selectedGoalIdx = randOf(goalRaceIdxList);
 
         writeConsole(selectedGoalIdx, RACES[currentEnemyPosition[selectedGoalIdx]]);
     }
@@ -786,13 +780,6 @@ function loop(timestamp) {
 
 const currentEnemyPosition = generateEnemyPosition(4);
 const currentGoal = generateGoal(4);
-
-console.log(`currentEnemyPosition`, currentEnemyPosition);
-console.log(`
-        ${currentGoal.slice(0, 3)}
-        ${currentGoal.slice(3, 6)}
-        ${currentGoal.slice(6, 9)}
-    `.replace(/ /mg, '').replace(/,/mg, ''));
 
 requestAnimationFrame(loop);
 
@@ -816,4 +803,3 @@ function generateGoal(size) {
 
     return goal;
 }
-

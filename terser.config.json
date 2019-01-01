@@ -1,0 +1,14 @@
+{
+  "toplevel": true,
+  "compress": {
+    "toplevel": true,
+    "passes": 15
+  },
+  "mangle": {
+    "toplevel": true,
+    "properties": true
+  },
+  "output": {
+    "code": true
+  }
+}

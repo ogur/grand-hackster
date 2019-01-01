@@ -1,0 +1,10 @@
+{
+  "name": "gwgc2018",
+  "version": "1.0.0",
+  "devDependencies": {
+    "terser": "^3.14.0"
+  },
+  "scripts": {
+    "build": "terser app.js -o dist/out.js --config-file terser.config.json"
+  }
+}
