@@ -5,8 +5,7 @@
     "passes": 15
   },
   "mangle": {
-    "toplevel": true,
-    "properties": true
+    "toplevel": true
   },
   "output": {
     "code": true
