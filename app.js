@@ -1,6 +1,12 @@
 // http://jrgraphix.net/research/unicode.php
 
 (async () => {
+    const ALL = {
+        top: 0,
+        left: 0,
+        width: 1920,
+        height: 1080,
+    };
 
     const MAIN_AREA = {
         left: 61,
@@ -550,6 +556,8 @@
      */
     const ctx = document.querySelector('#game').getContext('2d');
 
+    const imageSpace = document.querySelector('#sourceSpace');
+
     document.addEventListener('keydown', (event) => {
         if (event.key === ' ') {
             isSwitchingEnabled = true;
@@ -694,6 +702,11 @@
 
     function draw(timestamp) {
         // draw main bg
+        ctx.fillStyle = '#000';
+        ctx.fillRect(ALL.left, ALL.top, ALL.width, ALL.height);
+
+
+        // draw main bg
         ctx.fillStyle = '#003016';
         ctx.fillRect(MAIN_AREA.left, MAIN_AREA.top, MAIN_AREA.width, MAIN_AREA.height);
 
@@ -702,6 +715,7 @@
         ctx.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
 
         // draw keyboard
+        ctx.textAlign = 'center';
         for (const key of Object.values(keys)) {
             const keyX = MAIN_AREA.left + KEYBOARD.left + key.pos * 100 + key.groupRow * 50;
             const keyY = MAIN_AREA.top + KEYBOARD.top + key.groupRow * 100;
@@ -712,7 +726,7 @@
                 100, 100);
 
             ctx.font = '70px monospace';
-            ctx.fillStyle = key.isPushed ? '#fff' : '#000';
+            ctx.fillStyle = key.isPushed ? '#b5cac9' : '#322527';
             ctx.fillText(key.name.toUpperCase(),
                 keyX + 50,
                 keyY + 75,
@@ -720,7 +734,7 @@
         }
 
         // draw console bg
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#222';
         ctx.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
 
         // draw selected area bg
@@ -735,14 +749,6 @@
 
         }
 
-        // draw console grid
-        ctx.strokeStyle = '#fff1';
-        for (let gridX = 1; gridX < CONSOLE.lineCols; gridX++) {
-            ctx.strokeRect(CONSOLE.left + gridX * CONSOLE.gridCellWidth, CONSOLE.top, 1, CONSOLE.height);
-        }
-        for (let gridY = 1; gridY < CONSOLE.lineRows; gridY++) {
-            ctx.strokeRect(CONSOLE.left, CONSOLE.top + gridY * CONSOLE.gridCellHeight, CONSOLE.width, 1);
-        }
         // draw console grid area boundaries
         ctx.strokeStyle = '#f993';
         ctx.strokeRect(CONSOLE.left + CONSOLE.width / 3, CONSOLE.top, 1, CONSOLE.height);
@@ -786,8 +792,35 @@
         }
 
         // draw transmission
-        ctx.fillStyle = '#00F';
+        ctx.fillStyle = '#1e336e';
         ctx.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
+
+        ctx.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
+        ctx.fillStyle = '#fffc';
+        ctx.textAlign = 'left';
+        ctx.font = '20px monospace';
+        ctx.fillText('Żołnierzu, dlaczego', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204);
+        ctx.fillText('nie naparzacie', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 24);
+        ctx.fillText('w klawiaturę!?', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 48);
+
+        // scanlines
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+
+        const scanlineHeight = 5;
+        const offset = fl(timestamp/40) % (scanlineHeight*2);
+
+        for(let scanlineIdx = -scanlineHeight; scanlineIdx < ALL.height / scanlineHeight; scanlineIdx++) {
+            ctx.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
+            ctx.fillRect(ALL.left, ALL.top + scanlineIdx * scanlineHeight + offset, ALL.width, scanlineHeight);
+
+            if (scanlineIdx % 2 === 0 && randBetween(0, 15) === 0) {
+                const imgd = ctx.getImageData(ALL.left, ALL.top + scanlineIdx * scanlineHeight + offset, ALL.width, scanlineHeight);
+                ctx.putImageData(imgd, ALL.left - 2, ALL.top + scanlineIdx * scanlineHeight + offset);
+            }
+        }
+
+        ctx.restore();
     }
 
     function main(timestamp) {
