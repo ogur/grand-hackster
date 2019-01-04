@@ -710,10 +710,6 @@
         ctx.fillStyle = '#003016';
         ctx.fillRect(MAIN_AREA.left, MAIN_AREA.top, MAIN_AREA.width, MAIN_AREA.height);
 
-        // draw sec bg
-        ctx.fillStyle = '#0f0';
-        ctx.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
-
         // draw keyboard
         ctx.textAlign = 'center';
         for (const key of Object.values(keys)) {
@@ -803,6 +799,14 @@
         ctx.fillText('nie naparzacie', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 24);
         ctx.fillText('w klawiaturę!?', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 48);
 
+
+
+        // draw sec bg
+        ctx.fillStyle = '#200017';
+        ctx.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
+
+
+        drawLogo(timestamp);
         // scanlines
         ctx.save();
         ctx.globalCompositeOperation = 'multiply';
@@ -886,6 +890,110 @@
         return goal;
     }
 
+    function drawRetroText(text, x, y, height) {
+        const gradient = ctx.createLinearGradient(
+            x, y,
+            x, y + height
+        );
+
+        gradient.addColorStop(0,    '#3037d6');
+        gradient.addColorStop(0.05,  '#3037d6');
+        gradient.addColorStop(0.4,  '#ffffff');
+        gradient.addColorStop(0.5,  '#ffffff');
+        gradient.addColorStop(0.51, '#3f34cd');
+        gradient.addColorStop(0.58, '#b151ff');
+        gradient.addColorStop(0.91, '#ffffff');
+        gradient.addColorStop(1,    '#ffffff');
+
+        ctx.save();
+        ctx.fillStyle = gradient;
+        ctx.font = 'bold 130px monospace';
+        ctx.textBaseline = 'top';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = '#3f34cd';
+        ctx.fillText(text, x,y-5);
+        ctx.strokeStyle = '#eee';
+        ctx.lineWidth = 5;
+        ctx.globalCompositeOperation = 'soft-light';
+        ctx.strokeText(text, x,y-5);
+        ctx.restore();
+    }
+
+    function drawLogo(timestamp) {
+        ctx.save();
+        ctx.rect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
+        ctx.clip();
+        // draw console grid
+        const gridSize = 750;
+        const gridCellSize = 50;
+        const offset = fl(timestamp/50) % (gridCellSize);
+
+        ctx.save();
+        ctx.scale(1.5, 0.75);
+        ctx.translate(-505, 350);
+        ctx.strokeStyle = '#b000a3';
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        for (let gridIdx = 1; gridIdx < fl(gridSize / gridCellSize); gridIdx++) {
+            ctx.moveTo(SEC_AREA.left + gridSize / 4 + gridIdx * gridCellSize / 2,
+                SEC_AREA.top);
+            ctx.lineTo(SEC_AREA.left + gridIdx * gridCellSize,
+                SEC_AREA.top + gridSize / 2);
+
+            ctx.moveTo(SEC_AREA.left + gridSize * 0.25 - (gridIdx-2) * gridCellSize * 0.25 - offset * 0.5,
+                SEC_AREA.top + (gridIdx-2) * gridCellSize / 2 + offset);
+            ctx.lineTo(SEC_AREA.left + (gridSize * 0.75) + (gridIdx-2) * gridCellSize * 0.25 + offset * 0.5,
+                SEC_AREA.top + (gridIdx-2) * gridCellSize / 2 + offset);
+        }
+
+        ctx.stroke();
+        ctx.restore();
+
+        // draw grid mask
+        ctx.save();
+        const maskTop = 200;
+        const maskHeight = 300;
+
+        const maskGradient = ctx.createLinearGradient(
+            SEC_AREA.left + SEC_AREA.width / 2, SEC_AREA.top + maskTop,
+            SEC_AREA.left + SEC_AREA.width / 2, SEC_AREA.top + maskTop + maskHeight
+        );
+
+        maskGradient.addColorStop(0,    '#200017');
+        maskGradient.addColorStop(0.25,    '#200017');
+        maskGradient.addColorStop(1,  '#20001700');
+
+        ctx.fillStyle = maskGradient;
+        ctx.fillRect(SEC_AREA.left, SEC_AREA.top + maskTop, SEC_AREA.width, maskHeight);
+        ctx.restore();
+
+        // draw bg shadows
+        const bgCloudSize = 200;
+        ctx.save();
+        ctx.fillStyle = '#03008b';
+        ctx.shadowBlur = bgCloudSize * 2;
+        ctx.shadowColor = '#03008b';
+        ctx.shadowOffsetX = bgCloudSize;
+        ctx.shadowOffsetY = bgCloudSize;
+        ctx.fillRect(SEC_AREA.left - bgCloudSize, SEC_AREA.top - bgCloudSize, bgCloudSize, bgCloudSize);
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = '#36008b';
+        ctx.shadowBlur = bgCloudSize * 2;
+        ctx.shadowColor = '#8b0b86';
+        ctx.shadowOffsetX = -bgCloudSize;
+        ctx.shadowOffsetY = bgCloudSize;
+        ctx.fillRect(SEC_AREA.right, SEC_AREA.top - bgCloudSize, bgCloudSize, bgCloudSize);
+        ctx.restore();
+
+        // draw logo text
+        drawRetroText('GRAND', SEC_AREA.left + 185, SEC_AREA.top + 150, 100);
+        drawRetroText('HACKSTER', SEC_AREA.left + 85, SEC_AREA.top + 250, 100);
+
+        ctx.restore();
+    }
 
     const ownCode = await fetch(appScriptUrl)
         .then(x => x.text())
