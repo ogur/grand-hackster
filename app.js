@@ -620,18 +620,6 @@
         }
     });
 
-    function getHeatStyle(heat) {
-        const degree = heat / HEAT.max;
-
-        if (degree === 1) {
-            return 'rgb(0, 0, 0)';
-        } else if (degree < 0.5) {
-            return `rgb(255, 255, ${fl(255 * (1 - degree * 2))})`;
-        } else {
-            return `rgb(255, ${fl(255 * (1 - (degree - 0.5) * 2))}, 0)`;
-        }
-    }
-
     const consoleArea = [];
     const consoleHumanData = [];
 
@@ -707,27 +695,10 @@
 
 
         // draw main bg
-        ctx.fillStyle = '#003016';
+        ctx.fillStyle = '#200017';
         ctx.fillRect(MAIN_AREA.left, MAIN_AREA.top, MAIN_AREA.width, MAIN_AREA.height);
 
-        // draw keyboard
-        ctx.textAlign = 'center';
-        for (const key of Object.values(keys)) {
-            const keyX = MAIN_AREA.left + KEYBOARD.left + key.pos * 100 + key.groupRow * 50;
-            const keyY = MAIN_AREA.top + KEYBOARD.top + key.groupRow * 100;
-
-            ctx.fillStyle = key.isPushed ? '#090' : getHeatStyle(key.heat);
-            ctx.fillRect(keyX,
-                keyY,
-                100, 100);
-
-            ctx.font = '70px monospace';
-            ctx.fillStyle = key.isPushed ? '#b5cac9' : '#322527';
-            ctx.fillText(key.name.toUpperCase(),
-                keyX + 50,
-                keyY + 75,
-            );
-        }
+        drawKeyboard(timestamp);
 
         // draw console bg
         ctx.fillStyle = '#222';
@@ -889,6 +860,133 @@
 
         return goal;
     }
+
+    function drawKeyboard(timestamp) {
+        const initalX = MAIN_AREA.left + KEYBOARD.left + 30;
+        const initalY = MAIN_AREA.top + KEYBOARD.top;
+        const keySize = 95;
+
+        ctx.save();
+        for (const key of Object.values(keys)) {
+            const keyX = initalX + key.pos * keySize + key.groupRow * 50;
+            const keyY = initalY + key.groupRow * keySize;
+
+            drawKey(key, keyX, keyY);
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle = '#0f7aff';
+        ctx.lineWidth = 1;
+        ctx.shadowColor = '#0f7aff';
+        ctx.shadowBlur = 3;
+        ctx.beginPath();
+
+        const sepX = initalX - 10;
+        const sepY = initalY - 10;
+
+        ctx.moveTo(sepX, sepY);
+        ctx.lineTo(sepX + keySize * 3, sepY);
+        ctx.lineTo(sepX + keySize * 3, sepY + keySize);
+        ctx.lineTo(sepX + keySize * 4 - 45, sepY + keySize);
+        ctx.lineTo(sepX + keySize * 4 - 45, sepY + keySize * 2);
+        ctx.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 2);
+        ctx.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 3);
+        ctx.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 3);
+        ctx.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 2);
+        ctx.lineTo(sepX + keySize * 7 - 45, sepY + keySize * 2);
+        ctx.lineTo(sepX + keySize * 7 - 45, sepY + keySize);
+        ctx.lineTo(sepX + keySize * 7, sepY + keySize);
+        ctx.lineTo(sepX + keySize * 7, sepY);
+        ctx.lineTo(sepX + keySize * 10, sepY);
+
+        ctx.moveTo(sepX, sepY + keySize);
+        ctx.lineTo(sepX + keySize * 2, sepY + keySize);
+
+        ctx.moveTo(sepX + keySize - 50, sepY + keySize * 2);
+        ctx.lineTo(sepX + keySize * 3, sepY + keySize * 2);
+
+        ctx.moveTo(sepX + keySize * 8, sepY + keySize);
+        ctx.lineTo(sepX + keySize * 10, sepY + keySize);
+
+        ctx.moveTo(sepX + keySize * 7, sepY + keySize * 2);
+        ctx.lineTo(sepX + keySize * 9 + 50, sepY + keySize * 2);
+
+        ctx.moveTo(sepX + keySize * 4, sepY + keySize);
+        ctx.lineTo(sepX + keySize * 6, sepY + keySize);
+
+        ctx.moveTo(sepX + keySize * 5 - 50, sepY + keySize * 2);
+        ctx.lineTo(sepX + keySize * 5 + 50, sepY + keySize * 2);
+
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawKey(key, x, y) {
+        ctx.save();
+
+        // box
+        ctx.strokeStyle = getKeyStyle(key, {upState: '#ffc5f2'});
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = key.isPushed ? 1 : 5;
+        ctx.shadowColor = getKeyStyle(key);
+        ctx.fillStyle = '#200017';
+        ctx.strokeRect(x, y, 75, 75);
+
+        ctx.fillRect(x, y, 75, 75);
+
+        // heat leds
+        ctx.shadowBlur = 10;
+
+        const degree = fl(key.heat / 6);
+
+        if (degree < 5) {
+            for(const degreeIdx of [1,2,3,4]){
+                if (degree >= degreeIdx) {
+                    drawKeyboardLed(x + 65, y + 75 - degreeIdx * 10, getHeatStyle(degreeIdx));
+                }
+            }
+        }
+
+        // char
+        ctx.strokeStyle = getKeyStyle(key);
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = getKeyStyle(key);
+        ctx.lineWidth = 1;
+        ctx.font = '70px monospace';
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'left';
+        ctx.strokeText(key.name.toUpperCase(), x + 17, y + 7);
+        ctx.restore();
+    }
+
+    function getHeatStyle(heatDegree) {
+        return {
+            1: '#2b52ff',
+            2: '#ab3fff',
+            3: '#ff3690',
+            4: '#ffa436',
+        }[heatDegree];
+    }
+
+    function getKeyStyle(key, {downState, upState, destroyedState} = {}) {
+        if (key.isPushed) {
+            return downState || '#2b52ff';
+        } else if (key.isDestroyed) {
+            return destroyedState || '#a71a29';
+        } else {
+            return upState || '#ce36ff';
+        }
+    }
+
+    function drawKeyboardLed(x, y, color) {
+        ctx.shadowColor = color;
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, 5, 5);
+    }
+
+
 
     function drawRetroText(text, x, y, height) {
         const gradient = ctx.createLinearGradient(
