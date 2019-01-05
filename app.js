@@ -892,25 +892,25 @@
 
     function drawRetroText(text, x, y, height) {
         const gradient = ctx.createLinearGradient(
-            x, y,
-            x, y + height
+            x, y + 9,
+            x, y + height - 15
         );
 
         gradient.addColorStop(0,    '#3037d6');
         gradient.addColorStop(0.05,  '#3037d6');
-        gradient.addColorStop(0.4,  '#ffffff');
-        gradient.addColorStop(0.5,  '#ffffff');
-        gradient.addColorStop(0.51, '#3f34cd');
-        gradient.addColorStop(0.58, '#b151ff');
-        gradient.addColorStop(0.91, '#ffffff');
+        gradient.addColorStop(0.4,  '#f9a9ff');
+        gradient.addColorStop(0.52,  '#ffffff');
+        gradient.addColorStop(0.53, '#3f34cd');
+        gradient.addColorStop(0.58, '#bc28ff');
+        gradient.addColorStop(0.91, '#ffd1f9');
         gradient.addColorStop(1,    '#ffffff');
 
         ctx.save();
         ctx.fillStyle = gradient;
         ctx.font = 'bold 130px monospace';
         ctx.textBaseline = 'top';
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = '#3f34cd';
+        ctx.shadowBlur = 55;
+        ctx.shadowColor = '#a834cd';
         ctx.fillText(text, x,y-5);
         ctx.strokeStyle = '#eee';
         ctx.lineWidth = 5;
@@ -971,9 +971,9 @@
         // draw bg shadows
         const bgCloudSize = 200;
         ctx.save();
-        ctx.fillStyle = '#03008b';
+        ctx.fillStyle = '#0400af';
         ctx.shadowBlur = bgCloudSize * 2;
-        ctx.shadowColor = '#03008b';
+        ctx.shadowColor = '#0400af';
         ctx.shadowOffsetX = bgCloudSize;
         ctx.shadowOffsetY = bgCloudSize;
         ctx.fillRect(SEC_AREA.left - bgCloudSize, SEC_AREA.top - bgCloudSize, bgCloudSize, bgCloudSize);
