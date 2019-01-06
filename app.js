@@ -690,7 +690,7 @@
 
     function draw(timestamp) {
         // draw main bg
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#200017';
         ctx.fillRect(ALL.left, ALL.top, ALL.width, ALL.height);
 
 
@@ -700,63 +700,7 @@
 
         drawKeyboard(timestamp);
 
-        // draw console bg
-        ctx.fillStyle = '#222';
-        ctx.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
-
-        // draw selected area bg
-        if (selectedArea.row !== null && selectedArea.col !== null) {
-            ctx.fillStyle = '#030';
-            ctx.fillRect(
-                CONSOLE.left + selectedArea.col * CONSOLE.width / 3,
-                CONSOLE.top + selectedArea.row * CONSOLE.height / 3,
-                CONSOLE.width / 3,
-                CONSOLE.height / 3
-            );
-
-        }
-
-        // draw console grid area boundaries
-        ctx.strokeStyle = '#f993';
-        ctx.strokeRect(CONSOLE.left + CONSOLE.width / 3, CONSOLE.top, 1, CONSOLE.height);
-        ctx.strokeRect(CONSOLE.left + CONSOLE.width * 2 / 3, CONSOLE.top, 1, CONSOLE.height);
-        ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height / 3, CONSOLE.width, 1);
-        ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height * 2 / 3, CONSOLE.width, 1);
-
-        // draw chars
-        ctx.font = '14px monospace';
-        ctx.textAlign = 'center';
-
-
-        for (const cellIdx in consoleArea) {
-            const cell = consoleArea[cellIdx];
-            const cellCol = cellIdx % CONSOLE.lineCols;
-            const cellRow = fl(cellIdx / CONSOLE.lineCols);
-
-            if (cell.isNew) {
-                cell.isNew = false;
-                ctx.fillStyle = '#00ff00';
-                ctx.fillRect(
-                    CONSOLE.left + cellCol * CONSOLE.gridCellWidth,
-                    CONSOLE.top + cellRow * CONSOLE.gridCellHeight,
-                    CONSOLE.gridCellWidth,
-                    CONSOLE.gridCellHeight,
-                );
-            } else {
-                if (cell.race === 'HUMAN') {
-                    ctx.fillStyle = '#00ff00';
-                } else {
-                    ctx.fillStyle = '#ff0000';
-                }
-
-                ctx.fillText(cell.char,
-                    CONSOLE.left + cellCol * CONSOLE.gridCellWidth + 0.5 * CONSOLE.gridCellWidth,
-                    CONSOLE.top + 10 + cellRow * CONSOLE.gridCellHeight + 2,
-                );
-            }
-
-
-        }
+        drawConsole(timestamp);
 
         // draw transmission
         ctx.fillStyle = '#1e336e';
@@ -919,6 +863,15 @@
         ctx.lineTo(sepX + keySize * 5 + 50, sepY + keySize * 2);
 
         ctx.stroke();
+
+        ctx.strokeStyle = '#d7eaff';
+        ctx.lineWidth = 5;
+
+        ctx.globalCompositeOperation = 'overlay';
+        ctx.setLineDash([5, 3 * keySize, 5, 5 * keySize, 5, 7 * keySize]);
+        ctx.lineDashOffset = (timestamp / 8) % (15 * keySize + 15);
+        ctx.stroke();
+
         ctx.restore();
     }
 
@@ -1090,6 +1043,70 @@
         drawRetroText('GRAND', SEC_AREA.left + 185, SEC_AREA.top + 150, 100);
         drawRetroText('HACKSTER', SEC_AREA.left + 85, SEC_AREA.top + 250, 100);
 
+        ctx.restore();
+    }
+
+
+    function drawConsole(timestamp) {
+        ctx.save();
+        // draw console bg
+        ctx.fillStyle = '#222';
+        ctx.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
+
+        // draw selected area bg
+        if (selectedArea.row !== null && selectedArea.col !== null) {
+            ctx.fillStyle = '#030';
+            ctx.fillRect(
+                CONSOLE.left + selectedArea.col * CONSOLE.width / 3,
+                CONSOLE.top + selectedArea.row * CONSOLE.height / 3,
+                CONSOLE.width / 3,
+                CONSOLE.height / 3
+            );
+        }
+
+        // draw console grid area boundaries
+        ctx.shadowBlur = 3;
+        ctx.strokeStyle = '#f993';
+        ctx.strokeRect(CONSOLE.left + CONSOLE.width / 3, CONSOLE.top, 1, CONSOLE.height);
+        ctx.strokeRect(CONSOLE.left + CONSOLE.width * 2 / 3, CONSOLE.top, 1, CONSOLE.height);
+        ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height / 3, CONSOLE.width, 1);
+        ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height * 2 / 3, CONSOLE.width, 1);
+
+        // draw chars
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'center';
+
+        for (const cellIdx in consoleArea) {
+            const cell = consoleArea[cellIdx];
+            const cellCol = cellIdx % CONSOLE.lineCols;
+            const cellRow = fl(cellIdx / CONSOLE.lineCols);
+
+            if (cell.isNew) {
+                cell.isNew = false;
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(
+                    CONSOLE.left + cellCol * CONSOLE.gridCellWidth,
+                    CONSOLE.top + cellRow * CONSOLE.gridCellHeight,
+                    CONSOLE.gridCellWidth,
+                    CONSOLE.gridCellHeight,
+                );
+            } else {
+                if (cell.race === 'HUMAN') {
+                    ctx.fillStyle = '#00ff00';
+                    ctx.shadowColor = '#00ff00';
+                } else {
+                    ctx.fillStyle = '#ff0000';
+                    ctx.shadowColor = '#ff0000';
+                }
+
+                ctx.fillText(cell.char,
+                    CONSOLE.left + cellCol * CONSOLE.gridCellWidth + 0.5 * CONSOLE.gridCellWidth,
+                    CONSOLE.top + 10 + cellRow * CONSOLE.gridCellHeight + 2,
+                );
+            }
+
+
+        }
         ctx.restore();
     }
 
