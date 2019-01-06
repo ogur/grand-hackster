@@ -551,8 +551,29 @@
     const ctx = document.querySelector('#game').getContext('2d');
 
     const imageSpace = document.querySelector('#sourceSpace');
+    const imageAbout = document.querySelector('#sourceAbout');
 
     document.addEventListener('keydown', (event) => {
+        if (gameState.stage === 'INTRO') {
+            console.log(`event.key`, event.key);
+            if (event.key.toLowerCase() === 'arrowdown') {
+                systemMenu.selectedItem = (systemMenu.selectedItem + 1) % systemMenu.list.length;
+            } else if (event.key.toLowerCase() === 'arrowup') {
+                systemMenu.selectedItem = (systemMenu.list.length + systemMenu.selectedItem - 1) % systemMenu.list.length;
+            } else if (event.key.toLowerCase() === 'enter') {
+                if (systemMenu.selectedItem === 0) {
+                    gameState.stage = 'GAME';
+                } else if (systemMenu.selectedItem === 2) {
+                    gameState.stage = 'ABOUT';
+                }
+            }
+            return;
+        }
+
+        if (gameState.stage === 'ABOUT') {
+            gameState.stage = 'INTRO';
+        }
+
         if (event.key === ' ') {
             isSwitchingEnabled = true;
             if (event.ctrlKey || event.shiftKey) {
@@ -622,6 +643,19 @@
 
     const currentEnemyPosition = generateEnemyPosition(6);
     const currentGoal = generateGoal(4);
+
+    const systemMenu = {
+        list: [
+            'NEW GAME',
+            'MANUAL',
+            'ABOUT',
+        ],
+        selectedItem: 0,
+    };
+
+    const gameState = {
+        stage: 'INTRO'
+    };
 
     const ownCode = await fetch(appScriptUrl)
         .then(x => x.text())
@@ -788,16 +822,73 @@
         ctx.fillStyle = COLOR.bg;
         ctx.fillRect(SCAN_AREA.left, SCAN_AREA.top, SCAN_AREA.width, SCAN_AREA.height);
 
-        drawKeyboard(timestamp);
+        if (true || gameState.stage === 'INTRO') { // @todo remove
+            drawLogo(timestamp);
+        }
 
-        drawConsole(timestamp);
+        if (gameState.stage === 'INTRO') {
+            drawMenu(timestamp);
+        }
 
-        drawTransmission(timestamp);
+        if (gameState.stage === 'ABOUT') {
+            drawAbout(timestamp);
+        }
 
-        drawLogo(timestamp);
+        if (gameState.stage === 'GAME') {
+            drawKeyboard(timestamp);
+
+            drawConsole(timestamp);
+
+            drawTransmission(timestamp);
+
+        }
 
         drawScanlines(timestamp);
     }
+
+    function drawMenu(timestamp) {
+        ctx.save();
+        ctx.fillStyle = '#ff3690';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = '#ffa4c6';
+        ctx.textAlign = 'center';
+        ctx.font = '80px monospace';
+
+        for (let menuIdx = 0; menuIdx < systemMenu.list.length; menuIdx++) {
+            const x = MAIN_AREA.left + MAIN_AREA.width / 2;
+            const y = MAIN_AREA.top + 200 + menuIdx * 200;
+
+            ctx.fillText(systemMenu.list[menuIdx], x, y);
+
+            if (systemMenu.selectedItem === menuIdx) {
+                ctx.fillText('#>',
+                    x - (systemMenu.list[menuIdx].length + 4) * 20,
+                    y
+                );
+            }
+        }
+
+        ctx.restore();
+    }
+
+    function drawAbout(timestamp) {
+        ctx.save();
+
+        ctx.drawImage(imageAbout, MAIN_AREA.left + 235, MAIN_AREA.top + 300, 120, 160);
+
+        ctx.fillStyle = '#f9edff';
+        ctx.shadowColor = '#ad0fbb';
+        ctx.shadowBlur = 3;
+        ctx.textAlign = 'left';
+        ctx.font = '20px monospace';
+        ctx.fillText('Game created by', MAIN_AREA.left + 235 + 120 + 20, MAIN_AREA.top + 350);
+        ctx.fillText('Mateusz Morszczyzna', MAIN_AREA.left + 235 + 120 + 20, MAIN_AREA.top + 350 + 24);
+        ctx.fillText('@mmorszczyna', MAIN_AREA.left + 235 + 120 + 20, MAIN_AREA.top + 350 + 48);
+
+
+        ctx.restore();
+    }
+
 
     function drawKeyboard(timestamp) {
         const initalX = MAIN_AREA.left + KEYBOARD.left + 30;
