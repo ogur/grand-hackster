@@ -1,11 +1,8 @@
 // http://jrgraphix.net/research/unicode.php
 
 (async () => {
-    const ALL = {
-        top: 0,
-        left: 0,
-        width: 1920,
-        height: 1080,
+    const COLOR = {
+        bg: '#200017',
     };
 
     const MAIN_AREA = {
@@ -26,6 +23,12 @@
     SEC_AREA.width = SEC_AREA.right - SEC_AREA.left;
     SEC_AREA.height = SEC_AREA.bottom - SEC_AREA.top;
 
+    const SCAN_AREA = {
+        top : SEC_AREA.top,
+        height : MAIN_AREA.bottom - SEC_AREA.top,
+        left : MAIN_AREA.left,
+        width : SEC_AREA.right - MAIN_AREA.left
+    };
 
     const KEYBOARD = {
         left: 10,
@@ -542,15 +545,6 @@
     let isSwitchingEnabled = false;
     const selectedArea = {row: null, col: null};
 
-    const fl = Math.floor.bind(Math);
-    const rnd = Math.random.bind(Math);
-    const randOf = (arr) => {
-        return arr[fl(rnd() * arr.length)];
-    };
-    const randBetween = (lowerInput, upperInput) => {
-        let [lower, upper] = [lowerInput, upperInput].sort();
-        return lower + fl(rnd() * (upper - lower));
-    };
     /**
      * @type {CanvasRenderingContext2D | WebGLRenderingContext}
      */
@@ -623,6 +617,53 @@
     const consoleArea = [];
     const consoleHumanData = [];
 
+    let lastTimestampHeat = 0;
+    let lastTimestampEnemy = 0;
+
+    const currentEnemyPosition = generateEnemyPosition(6);
+    const currentGoal = generateGoal(4);
+
+    const ownCode = await fetch(appScriptUrl)
+        .then(x => x.text())
+        .then(source => {
+            return source.split(/#game/)[1]
+                .split('\n').join('')
+                .split('\r').join('')
+                .replace(/ +/gm, '.');
+        });
+
+    generateHumanChars();
+
+    init();
+
+    function fl(n) {
+        return Math.floor(n);
+    }
+    function rnd() {
+        return Math.random();
+    }
+
+    function randOf(arr) {
+        return arr[fl(rnd() * arr.length)];
+    }
+
+    function randBetween(lowerInput, upperInput) {
+        let [lower, upper] = [lowerInput, upperInput].sort();
+        return lower + fl(rnd() * (upper - lower));
+    }
+
+    function init() {
+        requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
+        main(timestamp);
+        draw(timestamp);
+
+        requestAnimationFrame(loop);
+    }
+
+
     function getEnemyChar(race) {
         return race.chars[fl(rnd() * race.chars.length)];
     }
@@ -685,64 +726,12 @@
         };
     }
 
-    let lastTimestampHeat = 0;
-    let lastTimestampEnemy = 0;
-
-    function draw(timestamp) {
-        // draw main bg
-        ctx.fillStyle = '#200017';
-        ctx.fillRect(ALL.left, ALL.top, ALL.width, ALL.height);
-
-
-        // draw main bg
-        ctx.fillStyle = '#200017';
-        ctx.fillRect(MAIN_AREA.left, MAIN_AREA.top, MAIN_AREA.width, MAIN_AREA.height);
-
-        drawKeyboard(timestamp);
-
-        drawConsole(timestamp);
-
-        // draw transmission
-        ctx.fillStyle = '#1e336e';
-        ctx.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
-
-        ctx.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
-        ctx.fillStyle = '#fffc';
-        ctx.textAlign = 'left';
-        ctx.font = '20px monospace';
-        ctx.fillText('Żołnierzu, dlaczego', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204);
-        ctx.fillText('nie naparzacie', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 24);
-        ctx.fillText('w klawiaturę!?', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 48);
-
-
-
-        // draw sec bg
-        ctx.fillStyle = '#200017';
-        ctx.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
-
-
-        drawLogo(timestamp);
-        // scanlines
-        ctx.save();
-        ctx.globalCompositeOperation = 'multiply';
-
-        const scanlineHeight = 5;
-        const offset = fl(timestamp/40) % (scanlineHeight*2);
-
-        for(let scanlineIdx = -scanlineHeight; scanlineIdx < ALL.height / scanlineHeight; scanlineIdx++) {
-            ctx.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
-            ctx.fillRect(ALL.left, ALL.top + scanlineIdx * scanlineHeight + offset, ALL.width, scanlineHeight);
-
-            if (scanlineIdx % 2 === 0 && randBetween(0, 15) === 0) {
-                const imgd = ctx.getImageData(ALL.left, ALL.top + scanlineIdx * scanlineHeight + offset, ALL.width, scanlineHeight);
-                ctx.putImageData(imgd, ALL.left - 2, ALL.top + scanlineIdx * scanlineHeight + offset);
-            }
-        }
-
-        ctx.restore();
+    function main(timestamp) {
+        heatDecay(timestamp);
+        enemyActivity(timestamp);
     }
 
-    function main(timestamp) {
+    function heatDecay(timestamp) {
         const heatInterval = 1000;
         if (timestamp - lastTimestampHeat > heatInterval) {
             lastTimestampHeat = fl(timestamp / heatInterval) * heatInterval;
@@ -753,7 +742,9 @@
                 }
             }
         }
+    }
 
+    function enemyActivity(timestamp) {
         const enemyInterval = 200;
         if (timestamp - lastTimestampEnemy > enemyInterval) {
             lastTimestampEnemy = fl(timestamp / enemyInterval) * enemyInterval;
@@ -770,20 +761,6 @@
         }
     }
 
-    function loop(timestamp) {
-        main(timestamp);
-        draw(timestamp);
-
-        requestAnimationFrame(loop);
-    }
-
-    const currentEnemyPosition = generateEnemyPosition(6);
-    const currentGoal = generateGoal(4);
-
-
-    function init() {
-        requestAnimationFrame(loop);
-    }
 
     function generateEnemyPosition(size) {
         const goal = Object.keys(RACES).sort(() => 0.5 - rnd());
@@ -803,6 +780,23 @@
         }
 
         return goal;
+    }
+
+
+    function draw(timestamp) {
+        // draw main bg
+        ctx.fillStyle = COLOR.bg;
+        ctx.fillRect(SCAN_AREA.left, SCAN_AREA.top, SCAN_AREA.width, SCAN_AREA.height);
+
+        drawKeyboard(timestamp);
+
+        drawConsole(timestamp);
+
+        drawTransmission(timestamp);
+
+        drawLogo(timestamp);
+
+        drawScanlines(timestamp);
     }
 
     function drawKeyboard(timestamp) {
@@ -883,7 +877,7 @@
         ctx.lineWidth = 3;
         ctx.shadowBlur = key.isPushed ? 1 : 5;
         ctx.shadowColor = getKeyStyle(key);
-        ctx.fillStyle = '#200017';
+        ctx.fillStyle = COLOR.bg;
         ctx.strokeRect(x, y, 75, 75);
 
         ctx.fillRect(x, y, 75, 75);
@@ -940,7 +934,6 @@
     }
 
 
-
     function drawRetroText(text, x, y, height) {
         const gradient = ctx.createLinearGradient(
             x, y + 9,
@@ -983,6 +976,8 @@
         ctx.scale(1.5, 0.75);
         ctx.translate(-505, 350);
         ctx.strokeStyle = '#b000a3';
+        ctx.shadowColor = '#e100d4';
+        ctx.shadowBlur = 10;
         ctx.lineWidth = 3;
 
         ctx.beginPath();
@@ -1011,9 +1006,9 @@
             SEC_AREA.left + SEC_AREA.width / 2, SEC_AREA.top + maskTop + maskHeight
         );
 
-        maskGradient.addColorStop(0,    '#200017');
-        maskGradient.addColorStop(0.25,    '#200017');
-        maskGradient.addColorStop(1,  '#20001700');
+        maskGradient.addColorStop(0,    COLOR.bg);
+        maskGradient.addColorStop(0.25,    COLOR.bg);
+        maskGradient.addColorStop(1,  'transparent');
 
         ctx.fillStyle = maskGradient;
         ctx.fillRect(SEC_AREA.left, SEC_AREA.top + maskTop, SEC_AREA.width, maskHeight);
@@ -1037,6 +1032,28 @@
         ctx.shadowOffsetX = -bgCloudSize;
         ctx.shadowOffsetY = bgCloudSize;
         ctx.fillRect(SEC_AREA.right, SEC_AREA.top - bgCloudSize, bgCloudSize, bgCloudSize);
+        ctx.restore();
+
+        ctx.save();
+        const mountsBg = new Path2D(`M${SEC_AREA.left - 60} ${SEC_AREA.top + 300}
+         l 160 -100
+         l 50 20
+         l 50 30
+         l 50 -30
+         l 50 -120
+         l 30 30
+         l 70 120
+         l 100 -100
+         l 100 50
+         l 160 100
+         Z`);
+        ctx.fillStyle = COLOR.bg;
+        ctx.strokeStyle = '#340531';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = '#340531';
+        ctx.lineWidth = 1;
+        ctx.fill(mountsBg);
+        ctx.stroke(mountsBg);
         ctx.restore();
 
         // draw logo text
@@ -1110,16 +1127,36 @@
         ctx.restore();
     }
 
-    const ownCode = await fetch(appScriptUrl)
-        .then(x => x.text())
-        .then(source => {
-            return source.split(/#game/)[1]
-                .split('\n').join('')
-                .split('\r').join('')
-                .replace(/ +/gm, '.');
-        });
 
-    generateHumanChars();
+    function drawTransmission(timestamp) {
+        ctx.save();
+        ctx.fillStyle = '#1e336e';
+        ctx.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
 
-    init();
+        ctx.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
+        ctx.fillStyle = '#f9edff';
+        ctx.shadowColor = '#ad0fbb';
+        ctx.shadowBlur = 3;
+        ctx.textAlign = 'left';
+        ctx.font = '20px monospace';
+        ctx.fillText('Żołnierzu, dlaczego', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204);
+        ctx.fillText('nie naparzacie', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 24);
+        ctx.fillText('w klawiaturę!?', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 48);
+        ctx.restore();
+    }
+
+    function drawScanlines(timestamp) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+
+        const scanlineHeight = 5;
+        const offset = fl(timestamp/40) % (scanlineHeight*2);
+
+        for(let scanlineIdx = -scanlineHeight; scanlineIdx < SCAN_AREA.height / scanlineHeight; scanlineIdx++) {
+            ctx.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
+            ctx.fillRect(SCAN_AREA.left, SCAN_AREA.top + scanlineIdx * scanlineHeight + offset, SCAN_AREA.width, scanlineHeight);
+        }
+
+        ctx.restore();
+    }
 })();
