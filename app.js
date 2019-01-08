@@ -808,11 +808,6 @@
         for(let scanlineIdx = -scanlineHeight; scanlineIdx < MAIN_AREA.height / scanlineHeight; scanlineIdx++) {
             ctxMain.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
             ctxMain.fillRect(0, scanlineIdx * scanlineHeight + offset, MAIN_AREA.width, scanlineHeight);
-
-            if (scanlineIdx % 2 === 0 && randBetween(0, 50) === 0) {
-                const imgd = ctxMain.getImageData(MAIN_AREA.left, MAIN_AREA.top + scanlineIdx * scanlineHeight + offset, MAIN_AREA.width, scanlineHeight);
-                ctxMain.putImageData(imgd, MAIN_AREA.left - 2, MAIN_AREA.top + scanlineIdx * scanlineHeight + offset);
-            }
         }
         ctxMain.restore();
 
@@ -821,11 +816,6 @@
         for(let scanlineIdx = -scanlineHeight; scanlineIdx < SEC_AREA.height / scanlineHeight; scanlineIdx++) {
             ctxSec.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
             ctxSec.fillRect(0, scanlineIdx * scanlineHeight + offset, SEC_AREA.width, scanlineHeight);
-
-            if (scanlineIdx % 2 === 0 && randBetween(0, 50) === 0) {
-                const imgd = ctxSec.getImageData(SEC_AREA.left, SEC_AREA.top + scanlineIdx * scanlineHeight + offset, SEC_AREA.width, scanlineHeight);
-                ctxSec.putImageData(imgd, SEC_AREA.left - 2, SEC_AREA.top + scanlineIdx * scanlineHeight + offset);
-            }
         }
         ctxSec.restore();
     }
