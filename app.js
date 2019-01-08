@@ -6,28 +6,17 @@
     };
 
     const MAIN_AREA = {
-        left: 61,
-        right: 1085,
-        top: 183,
-        bottom: 951,
+        left: 0,
+        top: 0,
+        width: 1024,
+        height: 768,
     };
-    MAIN_AREA.width = MAIN_AREA.right - MAIN_AREA.left;
-    MAIN_AREA.height = MAIN_AREA.bottom - MAIN_AREA.top;
 
     const SEC_AREA = {
-        left: 1137,
-        right: 1857,
-        top: 75,
-        bottom: 555,
-    };
-    SEC_AREA.width = SEC_AREA.right - SEC_AREA.left;
-    SEC_AREA.height = SEC_AREA.bottom - SEC_AREA.top;
-
-    const SCAN_AREA = {
-        top : SEC_AREA.top,
-        height : MAIN_AREA.bottom - SEC_AREA.top,
-        left : MAIN_AREA.left,
-        width : SEC_AREA.right - MAIN_AREA.left
+        left: 0,
+        width: 720,
+        top: 0,
+        height: 480,
     };
 
     const KEYBOARD = {
@@ -36,10 +25,10 @@
     };
 
     const CONSOLE = {
-        top: MAIN_AREA.top + 10,
-        left: MAIN_AREA.left + 10,
-        right: MAIN_AREA.right - 294,
-        bottom: MAIN_AREA.bottom - 350,
+        top: 10,
+        left: 10,
+        right: MAIN_AREA.width - 294,
+        bottom: MAIN_AREA.height - 350,
         lineCols: 72,
         lineRows: 27,
     };
@@ -53,10 +42,10 @@
     CONSOLE.lineRows3 = CONSOLE.lineRows / 3;
 
     const TRANSMISSION = {
-        top: MAIN_AREA.top + 10,
-        left: MAIN_AREA.right - 284,
-        right: MAIN_AREA.right - 10,
-        bottom: MAIN_AREA.bottom - 350,
+        top: 10,
+        left: MAIN_AREA.width - 284,
+        right: MAIN_AREA.width - 10,
+        bottom: MAIN_AREA.height - 350,
     };
     TRANSMISSION.width = TRANSMISSION.right - TRANSMISSION.left;
     TRANSMISSION.height = TRANSMISSION.bottom - TRANSMISSION.top;
@@ -141,12 +130,32 @@
     /**
      * @type {CanvasRenderingContext2D | WebGLRenderingContext}
      */
-    const ctx = document.querySelector('#game').getContext('2d');
+    const ctxMain = document.querySelector('#mainArea').getContext('2d');
+    const ctxSec = document.querySelector('#secArea').getContext('2d');
+
+    const canvasConsole = document.createElement('canvas');
+    canvasConsole.width = CONSOLE.width;
+    canvasConsole.height = CONSOLE.height;
+    ctxConsole = canvasConsole.getContext('2d');
+
+    const canvasLogo = document.createElement('canvas');
+    canvasLogo.width = SEC_AREA.width;
+    canvasLogo.height = SEC_AREA.height;
+    ctxLogo = canvasLogo.getContext('2d');
 
     const imageSpace = document.querySelector('#sourceSpace');
     const imageAbout = document.querySelector('#sourceAbout');
 
     document.addEventListener('keydown', (event) => {
+        if (!['f5', 'f11', 'f12'].includes(event.key.toLocaleLowerCase())) {
+            event.preventDefault();
+        }
+
+        if (event.key === '=') {
+            settings.isHq = !settings.isHq;
+            updateCache();
+        }
+
         if (gameState.stage === 'INTRO') {
             console.log(`event.key`, event.key);
             if (event.key.toLowerCase() === 'arrowdown') {
@@ -182,7 +191,7 @@
         const keyName = event.key.toLowerCase();
         const key = keys[keyName];
 
-        if (isSwitchingEnabled) {
+        if (key && isSwitchingEnabled) {
             selectedArea.col = key.groupCol;
             selectedArea.row = key.groupRow;
             return;
@@ -204,11 +213,10 @@
                 const targetCellColOffset = targetCol * CONSOLE.lineCols3;
                 const targetCellIdx = targetCellRow * CONSOLE.lineCols + targetCellColOffset + cellIdx % CONSOLE.lineCols3;
 
-                if (!consoleArea[targetCellIdx]) {
-                    consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx], isNew: true};
+                if (!consoleArea[targetCellIdx] || consoleArea[targetCellIdx].race !== 'HUMAN') {
+                    consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx]};
+                    writeHumanAction(targetCellIdx);
                     break;
-                } else if (consoleArea[targetCellIdx].race !== 'HUMAN') {
-                    consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx], isNew: true};
                 }
             }
         }
@@ -245,18 +253,20 @@
         ],
         selectedItem: 0,
     };
-
+    const settings = {
+        isHq: true,
+    };
     const gameState = {
-        stage: 'INTRO'
+        stage: 'INTRO',
     };
 
     const ownCode = await fetch(appScriptUrl)
         .then(x => x.text())
         .then(source => {
-            return source.split(/#game/)[1]
+            return source.split(/#mainArea'/)[1]
                 .split('\n').join('')
                 .split('\r').join('')
-                .replace(/ +/gm, '.');
+                .replace(/ +/gm, '');
         });
 
     generateHumanChars();
@@ -289,6 +299,8 @@
     }
 
     function init() {
+        updateCache();
+
         requestAnimationFrame(loop);
     }
 
@@ -349,7 +361,57 @@
         const selectedCol = randBetween(minCol, maxCol);
 
         const selectedCellIdx = selectedRow * CONSOLE.lineCols + selectedCol;
+
         consoleArea[selectedCellIdx] = {char: getEnemyChar(race), race: race.name};
+
+        ctxConsole.font = '14px monospace';
+        ctxConsole.textAlign = 'center';
+
+        const cell = consoleArea[selectedCellIdx];
+        const cellCol = selectedCellIdx % CONSOLE.lineCols;
+        const cellRow = fl(selectedCellIdx / CONSOLE.lineCols);
+
+        ctxConsole.fillStyle = '#ff0000';
+        ctxConsole.shadowColor = '#ff0000';
+        if (settings.isHq) {
+            ctxConsole.shadowBlur = 3;
+        }
+
+        ctxConsole.clearRect(
+            cellCol * CONSOLE.gridCellWidth,
+            cellRow * CONSOLE.gridCellHeight,
+            CONSOLE.gridCellWidth,
+            CONSOLE.gridCellHeight
+        );
+
+        ctxConsole.fillText(cell.char,
+            cellCol * CONSOLE.gridCellWidth + 0.5 * CONSOLE.gridCellWidth,
+            10 + cellRow * CONSOLE.gridCellHeight + 2,
+        );
+    }
+
+    function writeHumanAction(selectedCellIdx) {
+        const cell = consoleArea[selectedCellIdx];
+        const cellCol = selectedCellIdx % CONSOLE.lineCols;
+        const cellRow = fl(selectedCellIdx / CONSOLE.lineCols);
+
+        ctxConsole.clearRect(
+            cellCol * CONSOLE.gridCellWidth,
+            cellRow * CONSOLE.gridCellHeight,
+            CONSOLE.gridCellWidth,
+            CONSOLE.gridCellHeight
+        );
+
+        ctxConsole.fillStyle = '#00ff00';
+        ctxConsole.shadowColor = '#00ff00';
+        if (settings.isHq) {
+            ctxConsole.shadowBlur = 3;
+        }
+
+        ctxConsole.fillText(cell.char,
+            cellCol * CONSOLE.gridCellWidth + 0.5 * CONSOLE.gridCellWidth,
+            10 + cellRow * CONSOLE.gridCellHeight + 2,
+        );
     }
 
     function idxToCoors(cellIdx) {
@@ -421,8 +483,10 @@
 
     function draw(timestamp) {
         // draw main bg
-        ctx.fillStyle = COLOR.bg;
-        ctx.fillRect(SCAN_AREA.left, SCAN_AREA.top, SCAN_AREA.width, SCAN_AREA.height);
+        ctxMain.fillStyle = COLOR.bg;
+        ctxMain.fillRect(0, 0, MAIN_AREA.width, MAIN_AREA.height);
+        ctxSec.fillStyle = COLOR.bg;
+        ctxSec.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
 
         if (true || gameState.stage === 'INTRO') { // @todo remove
             drawLogo(timestamp);
@@ -449,134 +513,144 @@
     }
 
     function drawMenu(timestamp) {
-        ctx.save();
-        ctx.fillStyle = '#ff3690';
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = '#ffa4c6';
-        ctx.textAlign = 'center';
-        ctx.font = '80px monospace';
+        ctxMain.save();
+        ctxMain.fillStyle = '#ff3690';
+        if (settings.isHq) {
+            ctxMain.shadowBlur = 5;
+            ctxMain.shadowColor = '#ffa4c6';
+        }
+        ctxMain.textAlign = 'center';
+        ctxMain.font = '80px monospace';
 
         for (let menuIdx = 0; menuIdx < systemMenu.list.length; menuIdx++) {
-            const x = MAIN_AREA.left + MAIN_AREA.width / 2;
-            const y = MAIN_AREA.top + 200 + menuIdx * 200;
+            const x = MAIN_AREA.width / 2;
+            const y = 200 + menuIdx * 200;
 
-            ctx.fillText(systemMenu.list[menuIdx], x, y);
+            ctxMain.fillText(systemMenu.list[menuIdx], x, y);
 
             if (systemMenu.selectedItem === menuIdx) {
-                ctx.fillText('#>',
+                ctxMain.fillText('#>',
                     x - (systemMenu.list[menuIdx].length + 4) * 20,
                     y
                 );
             }
         }
 
-        ctx.restore();
+        ctxMain.restore();
     }
 
     function drawAbout(timestamp) {
-        ctx.save();
+        ctxMain.save();
 
-        ctx.drawImage(imageAbout, MAIN_AREA.left + 235, MAIN_AREA.top + 300, 120, 160);
+        ctxMain.drawImage(imageAbout, 235, 300, 120, 160);
 
-        ctx.fillStyle = '#f9edff';
-        ctx.shadowColor = '#ad0fbb';
-        ctx.shadowBlur = 3;
-        ctx.textAlign = 'left';
-        ctx.font = '20px monospace';
-        ctx.fillText('Game created by', MAIN_AREA.left + 235 + 120 + 20, MAIN_AREA.top + 350);
-        ctx.fillText('Mateusz Morszczyzna', MAIN_AREA.left + 235 + 120 + 20, MAIN_AREA.top + 350 + 24);
-        ctx.fillText('@mmorszczyna', MAIN_AREA.left + 235 + 120 + 20, MAIN_AREA.top + 350 + 48);
+        ctxMain.fillStyle = '#f9edff';
+        if (settings.isHq) {
+            ctxMain.shadowColor = '#ad0fbb';
+        ctxMain.shadowBlur = 3;
+        }
+        ctxMain.textAlign = 'left';
+        ctxMain.font = '20px monospace';
+        ctxMain.fillText('Game created by', 235 + 120 + 20, 350);
+        ctxMain.fillText('Mateusz Morszczyzna', 235 + 120 + 20, 350 + 24);
+        ctxMain.fillText('@mmorszczyna', 235 + 120 + 20, 350 + 48);
 
 
-        ctx.restore();
+        ctxMain.restore();
     }
 
 
     function drawKeyboard(timestamp) {
-        const initalX = MAIN_AREA.left + KEYBOARD.left + 30;
-        const initalY = MAIN_AREA.top + KEYBOARD.top;
+        const initalX = KEYBOARD.left + 30;
+        const initalY = KEYBOARD.top;
         const keySize = 95;
 
-        ctx.save();
+        ctxMain.save();
         for (const key of Object.values(keys)) {
             const keyX = initalX + key.pos * keySize + key.groupRow * 50;
             const keyY = initalY + key.groupRow * keySize;
 
             drawKey(key, keyX, keyY);
         }
-        ctx.restore();
+        ctxMain.restore();
 
-        ctx.save();
-        ctx.strokeStyle = '#0f7aff';
-        ctx.lineWidth = 1;
-        ctx.shadowColor = '#0f7aff';
-        ctx.shadowBlur = 3;
-        ctx.beginPath();
+        ctxMain.save();
+        ctxMain.strokeStyle = '#0f7aff';
+        ctxMain.lineWidth = 1;
+        if (settings.isHq) {
+            ctxMain.shadowColor = '#0f7aff';
+            ctxMain.shadowBlur = 3;
+        }
+        ctxMain.beginPath();
 
         const sepX = initalX - 10;
         const sepY = initalY - 10;
 
-        ctx.moveTo(sepX, sepY);
-        ctx.lineTo(sepX + keySize * 3, sepY);
-        ctx.lineTo(sepX + keySize * 3, sepY + keySize);
-        ctx.lineTo(sepX + keySize * 4 - 45, sepY + keySize);
-        ctx.lineTo(sepX + keySize * 4 - 45, sepY + keySize * 2);
-        ctx.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 2);
-        ctx.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 3);
-        ctx.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 3);
-        ctx.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 2);
-        ctx.lineTo(sepX + keySize * 7 - 45, sepY + keySize * 2);
-        ctx.lineTo(sepX + keySize * 7 - 45, sepY + keySize);
-        ctx.lineTo(sepX + keySize * 7, sepY + keySize);
-        ctx.lineTo(sepX + keySize * 7, sepY);
-        ctx.lineTo(sepX + keySize * 10, sepY);
+        ctxMain.moveTo(sepX, sepY);
+        ctxMain.lineTo(sepX + keySize * 3, sepY);
+        ctxMain.lineTo(sepX + keySize * 3, sepY + keySize);
+        ctxMain.lineTo(sepX + keySize * 4 - 45, sepY + keySize);
+        ctxMain.lineTo(sepX + keySize * 4 - 45, sepY + keySize * 2);
+        ctxMain.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 2);
+        ctxMain.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 3);
+        ctxMain.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 3);
+        ctxMain.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 2);
+        ctxMain.lineTo(sepX + keySize * 7 - 45, sepY + keySize * 2);
+        ctxMain.lineTo(sepX + keySize * 7 - 45, sepY + keySize);
+        ctxMain.lineTo(sepX + keySize * 7, sepY + keySize);
+        ctxMain.lineTo(sepX + keySize * 7, sepY);
+        ctxMain.lineTo(sepX + keySize * 10, sepY);
 
-        ctx.moveTo(sepX, sepY + keySize);
-        ctx.lineTo(sepX + keySize * 2, sepY + keySize);
+        ctxMain.moveTo(sepX, sepY + keySize);
+        ctxMain.lineTo(sepX + keySize * 2, sepY + keySize);
 
-        ctx.moveTo(sepX + keySize - 50, sepY + keySize * 2);
-        ctx.lineTo(sepX + keySize * 3, sepY + keySize * 2);
+        ctxMain.moveTo(sepX + keySize - 50, sepY + keySize * 2);
+        ctxMain.lineTo(sepX + keySize * 3, sepY + keySize * 2);
 
-        ctx.moveTo(sepX + keySize * 8, sepY + keySize);
-        ctx.lineTo(sepX + keySize * 10, sepY + keySize);
+        ctxMain.moveTo(sepX + keySize * 8, sepY + keySize);
+        ctxMain.lineTo(sepX + keySize * 10, sepY + keySize);
 
-        ctx.moveTo(sepX + keySize * 7, sepY + keySize * 2);
-        ctx.lineTo(sepX + keySize * 9 + 50, sepY + keySize * 2);
+        ctxMain.moveTo(sepX + keySize * 7, sepY + keySize * 2);
+        ctxMain.lineTo(sepX + keySize * 9 + 50, sepY + keySize * 2);
 
-        ctx.moveTo(sepX + keySize * 4, sepY + keySize);
-        ctx.lineTo(sepX + keySize * 6, sepY + keySize);
+        ctxMain.moveTo(sepX + keySize * 4, sepY + keySize);
+        ctxMain.lineTo(sepX + keySize * 6, sepY + keySize);
 
-        ctx.moveTo(sepX + keySize * 5 - 50, sepY + keySize * 2);
-        ctx.lineTo(sepX + keySize * 5 + 50, sepY + keySize * 2);
+        ctxMain.moveTo(sepX + keySize * 5 - 50, sepY + keySize * 2);
+        ctxMain.lineTo(sepX + keySize * 5 + 50, sepY + keySize * 2);
 
-        ctx.stroke();
+        ctxMain.stroke();
 
-        ctx.strokeStyle = '#d7eaff';
-        ctx.lineWidth = 5;
+        ctxMain.strokeStyle = '#d7eaff';
+        ctxMain.lineWidth = 5;
 
-        ctx.globalCompositeOperation = 'overlay';
-        ctx.setLineDash([5, 3 * keySize, 5, 5 * keySize, 5, 7 * keySize]);
-        ctx.lineDashOffset = (timestamp / 8) % (15 * keySize + 15);
-        ctx.stroke();
+        ctxMain.globalCompositeOperation = 'overlay';
+        ctxMain.setLineDash([5, 3 * keySize, 5, 5 * keySize, 5, 7 * keySize]);
+        ctxMain.lineDashOffset = (timestamp / 8) % (15 * keySize + 15);
+        ctxMain.stroke();
 
-        ctx.restore();
+        ctxMain.restore();
     }
 
     function drawKey(key, x, y) {
-        ctx.save();
+        ctxMain.save();
 
         // box
-        ctx.strokeStyle = getKeyStyle(key, {upState: '#ffc5f2'});
-        ctx.lineWidth = 3;
-        ctx.shadowBlur = key.isPushed ? 1 : 5;
-        ctx.shadowColor = getKeyStyle(key);
-        ctx.fillStyle = COLOR.bg;
-        ctx.strokeRect(x, y, 75, 75);
+        ctxMain.strokeStyle = getKeyStyle(key, {upState: '#ffc5f2'});
+        ctxMain.lineWidth = 3;
+        if (settings.isHq) {
+            ctxMain.shadowBlur = key.isPushed ? 1 : 5;
+            ctxMain.shadowColor = getKeyStyle(key);
+        }
+        ctxMain.fillStyle = COLOR.bg;
+        ctxMain.strokeRect(x, y, 75, 75);
 
-        ctx.fillRect(x, y, 75, 75);
+        ctxMain.fillRect(x, y, 75, 75);
 
         // heat leds
-        ctx.shadowBlur = 10;
+        if (settings.isHq) {
+            ctxMain.shadowBlur = 10;
+        }
 
         const degree = fl(key.heat / 6);
 
@@ -589,16 +663,18 @@
         }
 
         // char
-        ctx.strokeStyle = getKeyStyle(key);
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = getKeyStyle(key);
-        ctx.lineWidth = 1;
-        ctx.font = '70px monospace';
-        ctx.textBaseline = 'top';
-        ctx.textAlign = 'left';
-        ctx.strokeText(key.name.toUpperCase(), x + 17, y + 7);
-        ctx.restore();
+        ctxMain.strokeStyle = getKeyStyle(key);
+        ctxMain.lineWidth = 2;
+        if (settings.isHq) {
+            ctxMain.shadowBlur = 10;
+            ctxMain.shadowColor = getKeyStyle(key);
+        }
+        ctxMain.lineWidth = 1;
+        ctxMain.font = '70px monospace';
+        ctxMain.textBaseline = 'top';
+        ctxMain.textAlign = 'left';
+        ctxMain.strokeText(key.name.toUpperCase(), x + 17, y + 7);
+        ctxMain.restore();
     }
 
     function getHeatStyle(heatDegree) {
@@ -621,14 +697,14 @@
     }
 
     function drawKeyboardLed(x, y, color) {
-        ctx.shadowColor = color;
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, 5, 5);
+        ctxMain.shadowColor = color;
+        ctxMain.fillStyle = color;
+        ctxMain.fillRect(x, y, 5, 5);
     }
 
 
     function drawRetroText(text, x, y, height) {
-        const gradient = ctx.createLinearGradient(
+        const gradient = ctxLogo.createLinearGradient(
             x, y + 9,
             x, y + height - 15
         );
@@ -642,93 +718,180 @@
         gradient.addColorStop(0.91, '#ffd1f9');
         gradient.addColorStop(1,    '#ffffff');
 
-        ctx.save();
-        ctx.fillStyle = gradient;
-        ctx.font = 'bold 130px monospace';
-        ctx.textBaseline = 'top';
-        ctx.shadowBlur = 55;
-        ctx.shadowColor = '#a834cd';
-        ctx.fillText(text, x,y-5);
-        ctx.strokeStyle = '#eee';
-        ctx.lineWidth = 5;
-        ctx.globalCompositeOperation = 'soft-light';
-        ctx.strokeText(text, x,y-5);
-        ctx.restore();
+        ctxLogo.save();
+        ctxLogo.fillStyle = gradient;
+        ctxLogo.font = 'bold 130px monospace';
+        ctxLogo.textBaseline = 'top';
+        if (settings.isHq) {
+            ctxLogo.shadowBlur = 55;
+            ctxLogo.shadowColor = '#a834cd';
+        }
+        ctxLogo.fillText(text, x,y-5);
+        ctxLogo.strokeStyle = '#eee';
+        ctxLogo.lineWidth = 5;
+        ctxLogo.globalCompositeOperation = 'soft-light';
+        ctxLogo.strokeText(text, x,y-5);
+        ctxLogo.restore();
     }
 
     function drawLogo(timestamp) {
-        ctx.save();
-        ctx.rect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
-        ctx.clip();
+        ctxSec.save();
+        ctxSec.rect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
+        ctxSec.clip();
         // draw console grid
         const gridSize = 750;
         const gridCellSize = 50;
         const offset = fl(timestamp/50) % (gridCellSize);
 
-        ctx.save();
-        ctx.scale(1.5, 0.75);
-        ctx.translate(-505, 350);
-        ctx.strokeStyle = '#b000a3';
-        ctx.shadowColor = '#e100d4';
-        ctx.shadowBlur = 10;
-        ctx.lineWidth = 3;
+        ctxSec.scale(1.5, 0.75);
+        ctxSec.translate(-505, 350);
+        ctxSec.strokeStyle = '#b000a3';
+        if (settings.isHq) {
+            ctxSec.shadowColor = '#e100d4';
+            ctxSec.shadowBlur = 10;
+        }
+        ctxSec.lineWidth = 3;
 
-        ctx.beginPath();
+        ctxSec.beginPath();
         for (let gridIdx = 1; gridIdx < fl(gridSize / gridCellSize); gridIdx++) {
-            ctx.moveTo(SEC_AREA.left + gridSize / 4 + gridIdx * gridCellSize / 2,
+            ctxSec.moveTo(gridSize / 4 + gridIdx * gridCellSize / 2,
                 SEC_AREA.top);
-            ctx.lineTo(SEC_AREA.left + gridIdx * gridCellSize,
-                SEC_AREA.top + gridSize / 2);
+            ctxSec.lineTo(gridIdx * gridCellSize,
+                gridSize / 2);
 
-            ctx.moveTo(SEC_AREA.left + gridSize * 0.25 - (gridIdx-2) * gridCellSize * 0.25 - offset * 0.5,
-                SEC_AREA.top + (gridIdx-2) * gridCellSize / 2 + offset);
-            ctx.lineTo(SEC_AREA.left + (gridSize * 0.75) + (gridIdx-2) * gridCellSize * 0.25 + offset * 0.5,
-                SEC_AREA.top + (gridIdx-2) * gridCellSize / 2 + offset);
+            ctxSec.moveTo(gridSize * 0.25 - (gridIdx-2) * gridCellSize * 0.25 - offset * 0.5,
+                (gridIdx-2) * gridCellSize / 2 + offset);
+            ctxSec.lineTo((gridSize * 0.75) + (gridIdx-2) * gridCellSize * 0.25 + offset * 0.5,
+                (gridIdx-2) * gridCellSize / 2 + offset);
         }
 
-        ctx.stroke();
-        ctx.restore();
+        ctxSec.stroke();
+        ctxSec.restore();
+        ctxSec.drawImage(ctxLogo.canvas, 0, 0);
+    }
 
+
+    function drawConsole(timestamp) {
+        ctxMain.save();
+        // draw console bg
+        ctxMain.fillStyle = '#222';
+        ctxMain.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
+
+        // draw selected area bg
+        if (selectedArea.row !== null && selectedArea.col !== null) {
+            ctxMain.fillStyle = '#030';
+            ctxMain.fillRect(
+                CONSOLE.left + selectedArea.col * CONSOLE.width / 3,
+                CONSOLE.top + selectedArea.row * CONSOLE.height / 3,
+                CONSOLE.width / 3,
+                CONSOLE.height / 3
+            );
+        }
+
+        // draw console grid area boundaries
+        if (settings.isHq) {
+            ctxMain.shadowBlur = 3;
+        }
+        ctxMain.strokeStyle = '#f993';
+        ctxMain.strokeRect(CONSOLE.left + CONSOLE.width / 3, CONSOLE.top, 1, CONSOLE.height);
+        ctxMain.strokeRect(CONSOLE.left + CONSOLE.width * 2 / 3, CONSOLE.top, 1, CONSOLE.height);
+        ctxMain.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height / 3, CONSOLE.width, 1);
+        ctxMain.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height * 2 / 3, CONSOLE.width, 1);
+
+        ctxMain.drawImage(ctxConsole.canvas, CONSOLE.left, CONSOLE.top);
+
+        ctxMain.restore();
+    }
+
+
+    function drawTransmission(timestamp) {
+        ctxMain.save();
+        ctxMain.fillStyle = '#1e336e';
+        ctxMain.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
+
+        ctxMain.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
+        ctxMain.fillStyle = '#f9edff';
+        if (settings.isHq) {
+            ctxMain.shadowColor = '#ad0fbb';
+            ctxMain.shadowBlur = 3;
+        }
+        ctxMain.textAlign = 'left';
+        ctxMain.font = '20px monospace';
+        ctxMain.fillText('Żołnierzu, dlaczego', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204);
+        ctxMain.fillText('nie naparzacie', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 24);
+        ctxMain.fillText('w klawiaturę!?', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 48);
+        ctxMain.restore();
+    }
+
+    function drawScanlines(timestamp) {
+        const scanlineHeight = 5;
+        const offset = fl(timestamp/40) % (scanlineHeight*2);
+
+        ctxMain.save();
+        ctxMain.globalCompositeOperation = 'multiply';
+        for(let scanlineIdx = -scanlineHeight; scanlineIdx < MAIN_AREA.height / scanlineHeight; scanlineIdx++) {
+            ctxMain.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
+            ctxMain.fillRect(0, scanlineIdx * scanlineHeight + offset, MAIN_AREA.width, scanlineHeight);
+        }
+        ctxMain.restore();
+
+        ctxSec.save();
+        ctxSec.globalCompositeOperation = 'multiply';
+        for(let scanlineIdx = -scanlineHeight; scanlineIdx < SEC_AREA.height / scanlineHeight; scanlineIdx++) {
+            ctxSec.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
+            ctxSec.fillRect(0, scanlineIdx * scanlineHeight + offset, SEC_AREA.width, scanlineHeight);
+        }
+        ctxSec.restore();
+    }
+
+    function updateCache() {
+        prerenderLogo();
+    }
+
+    function prerenderLogo() {
         // draw grid mask
-        ctx.save();
+        ctxLogo.save();
+        ctxLogo.clearRect(0, 0, SEC_AREA.width, SEC_AREA.height);
         const maskTop = 200;
         const maskHeight = 300;
 
-        const maskGradient = ctx.createLinearGradient(
-            SEC_AREA.left + SEC_AREA.width / 2, SEC_AREA.top + maskTop,
-            SEC_AREA.left + SEC_AREA.width / 2, SEC_AREA.top + maskTop + maskHeight
+        const maskGradient = ctxLogo.createLinearGradient(
+            SEC_AREA.width / 2, maskTop,
+            SEC_AREA.width / 2, maskTop + maskHeight
         );
 
         maskGradient.addColorStop(0,    COLOR.bg);
         maskGradient.addColorStop(0.25,    COLOR.bg);
         maskGradient.addColorStop(1,  'transparent');
 
-        ctx.fillStyle = maskGradient;
-        ctx.fillRect(SEC_AREA.left, SEC_AREA.top + maskTop, SEC_AREA.width, maskHeight);
-        ctx.restore();
+        ctxLogo.fillStyle = maskGradient;
+        ctxLogo.fillRect(0, maskTop, SEC_AREA.width, maskHeight);
+        ctxLogo.restore();
 
         // draw bg shadows
-        const bgCloudSize = 200;
-        ctx.save();
-        ctx.fillStyle = '#0400af';
-        ctx.shadowBlur = bgCloudSize * 2;
-        ctx.shadowColor = '#0400af';
-        ctx.shadowOffsetX = bgCloudSize;
-        ctx.shadowOffsetY = bgCloudSize;
-        ctx.fillRect(SEC_AREA.left - bgCloudSize, SEC_AREA.top - bgCloudSize, bgCloudSize, bgCloudSize);
-        ctx.restore();
+        if (settings.isHq) {
+            const bgCloudSize = 200;
+            ctxLogo.save();
+            ctxLogo.fillStyle = '#0400af';
+            ctxLogo.shadowBlur = bgCloudSize * 2;
+            ctxLogo.shadowColor = '#0400af';
+            ctxLogo.shadowOffsetX = bgCloudSize;
+            ctxLogo.shadowOffsetY = bgCloudSize;
+            ctxLogo.fillRect( -bgCloudSize, 0 - bgCloudSize, bgCloudSize, bgCloudSize);
+            ctxLogo.restore();
 
-        ctx.save();
-        ctx.fillStyle = '#36008b';
-        ctx.shadowBlur = bgCloudSize * 2;
-        ctx.shadowColor = '#8b0b86';
-        ctx.shadowOffsetX = -bgCloudSize;
-        ctx.shadowOffsetY = bgCloudSize;
-        ctx.fillRect(SEC_AREA.right, SEC_AREA.top - bgCloudSize, bgCloudSize, bgCloudSize);
-        ctx.restore();
+            ctxLogo.save();
+            ctxLogo.fillStyle = '#36008b';
+            ctxLogo.shadowBlur = bgCloudSize * 2;
+            ctxLogo.shadowColor = '#8b0b86';
+            ctxLogo.shadowOffsetX = -bgCloudSize;
+            ctxLogo.shadowOffsetY = bgCloudSize;
+            ctxLogo.fillRect(SEC_AREA.width, 0 - bgCloudSize, bgCloudSize, bgCloudSize);
+            ctxLogo.restore();
+        }
 
-        ctx.save();
-        const mountsBg = new Path2D(`M${SEC_AREA.left - 60} ${SEC_AREA.top + 300}
+        ctxLogo.save();
+        const mountsBg = new Path2D(`M -60 300
          l 160 -100
          l 50 20
          l 50 30
@@ -740,116 +903,19 @@
          l 100 50
          l 160 100
          Z`);
-        ctx.fillStyle = COLOR.bg;
-        ctx.strokeStyle = '#340531';
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = '#340531';
-        ctx.lineWidth = 1;
-        ctx.fill(mountsBg);
-        ctx.stroke(mountsBg);
-        ctx.restore();
+        ctxLogo.fillStyle = COLOR.bg;
+        ctxLogo.strokeStyle = '#340531';
+        if (settings.isHq) {
+            ctxLogo.shadowBlur = 5;
+            ctxLogo.shadowColor = '#340531';
+        }
+        ctxLogo.lineWidth = 1;
+        ctxLogo.fill(mountsBg);
+        ctxLogo.stroke(mountsBg);
+        ctxLogo.restore();
 
         // draw logo text
-        drawRetroText('GRAND', SEC_AREA.left + 185, SEC_AREA.top + 150, 100);
-        drawRetroText('HACKSTER', SEC_AREA.left + 85, SEC_AREA.top + 250, 100);
-
-        ctx.restore();
-    }
-
-
-    function drawConsole(timestamp) {
-        ctx.save();
-        // draw console bg
-        ctx.fillStyle = '#222';
-        ctx.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
-
-        // draw selected area bg
-        if (selectedArea.row !== null && selectedArea.col !== null) {
-            ctx.fillStyle = '#030';
-            ctx.fillRect(
-                CONSOLE.left + selectedArea.col * CONSOLE.width / 3,
-                CONSOLE.top + selectedArea.row * CONSOLE.height / 3,
-                CONSOLE.width / 3,
-                CONSOLE.height / 3
-            );
-        }
-
-        // draw console grid area boundaries
-        ctx.shadowBlur = 3;
-        ctx.strokeStyle = '#f993';
-        ctx.strokeRect(CONSOLE.left + CONSOLE.width / 3, CONSOLE.top, 1, CONSOLE.height);
-        ctx.strokeRect(CONSOLE.left + CONSOLE.width * 2 / 3, CONSOLE.top, 1, CONSOLE.height);
-        ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height / 3, CONSOLE.width, 1);
-        ctx.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height * 2 / 3, CONSOLE.width, 1);
-
-        // draw chars
-        ctx.font = '14px monospace';
-        ctx.textAlign = 'center';
-
-        for (const cellIdx in consoleArea) {
-            const cell = consoleArea[cellIdx];
-            const cellCol = cellIdx % CONSOLE.lineCols;
-            const cellRow = fl(cellIdx / CONSOLE.lineCols);
-
-            if (cell.isNew) {
-                cell.isNew = false;
-                ctx.fillStyle = '#00ff00';
-                ctx.fillRect(
-                    CONSOLE.left + cellCol * CONSOLE.gridCellWidth,
-                    CONSOLE.top + cellRow * CONSOLE.gridCellHeight,
-                    CONSOLE.gridCellWidth,
-                    CONSOLE.gridCellHeight,
-                );
-            } else {
-                if (cell.race === 'HUMAN') {
-                    ctx.fillStyle = '#00ff00';
-                    ctx.shadowColor = '#00ff00';
-                } else {
-                    ctx.fillStyle = '#ff0000';
-                    ctx.shadowColor = '#ff0000';
-                }
-
-                ctx.fillText(cell.char,
-                    CONSOLE.left + cellCol * CONSOLE.gridCellWidth + 0.5 * CONSOLE.gridCellWidth,
-                    CONSOLE.top + 10 + cellRow * CONSOLE.gridCellHeight + 2,
-                );
-            }
-
-
-        }
-        ctx.restore();
-    }
-
-
-    function drawTransmission(timestamp) {
-        ctx.save();
-        ctx.fillStyle = '#1e336e';
-        ctx.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
-
-        ctx.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
-        ctx.fillStyle = '#f9edff';
-        ctx.shadowColor = '#ad0fbb';
-        ctx.shadowBlur = 3;
-        ctx.textAlign = 'left';
-        ctx.font = '20px monospace';
-        ctx.fillText('Żołnierzu, dlaczego', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204);
-        ctx.fillText('nie naparzacie', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 24);
-        ctx.fillText('w klawiaturę!?', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 48);
-        ctx.restore();
-    }
-
-    function drawScanlines(timestamp) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'multiply';
-
-        const scanlineHeight = 5;
-        const offset = fl(timestamp/40) % (scanlineHeight*2);
-
-        for(let scanlineIdx = -scanlineHeight; scanlineIdx < SCAN_AREA.height / scanlineHeight; scanlineIdx++) {
-            ctx.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
-            ctx.fillRect(SCAN_AREA.left, SCAN_AREA.top + scanlineIdx * scanlineHeight + offset, SCAN_AREA.width, scanlineHeight);
-        }
-
-        ctx.restore();
+        drawRetroText('GRAND', 185, 150, 100);
+        drawRetroText('HACKSTER', 85, 250, 100);
     }
 })();
