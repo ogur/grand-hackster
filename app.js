@@ -20,26 +20,30 @@
     };
 
     const KEYBOARD = {
-        left: 10,
-        top: 458,
+        left: 20,
+        top: 425,
+        initalX: 40,
+        initalY: 445,
+        sepX: 30,
+        sepY: 435,
     };
 
     const CONSOLE = {
         top: 10,
         left: 10,
-        right: MAIN_AREA.width - 294,
-        bottom: MAIN_AREA.height - 350,
+        width: 720,
+        height: 405,
         lineCols: 72,
         lineRows: 27,
     };
-    CONSOLE.width = CONSOLE.right - CONSOLE.left;
-    CONSOLE.height = CONSOLE.bottom - CONSOLE.top;
     CONSOLE.bufferLimit = CONSOLE.lineRows * CONSOLE.lineCols;
     CONSOLE.areaLimit = CONSOLE.bufferLimit / 9;
     CONSOLE.gridCellWidth = CONSOLE.width / CONSOLE.lineCols;
     CONSOLE.gridCellHeight = CONSOLE.height / CONSOLE.lineRows;
     CONSOLE.lineCols3 = CONSOLE.lineCols / 3;
     CONSOLE.lineRows3 = CONSOLE.lineRows / 3;
+
+    console.log(`CONSOLE`, CONSOLE);
 
     const TRANSMISSION = {
         top: 10,
@@ -142,6 +146,11 @@
     canvasLogo.width = SEC_AREA.width;
     canvasLogo.height = SEC_AREA.height;
     ctxLogo = canvasLogo.getContext('2d');
+
+    const canvasKeyboard = document.createElement('canvas');
+    canvasKeyboard.width = SEC_AREA.width;
+    canvasKeyboard.height = SEC_AREA.height;
+    ctxKeyboard = canvasKeyboard.getContext('2d');
 
     const imageSpace = document.querySelector('#sourceSpace');
     const imageAbout = document.querySelector('#sourceAbout');
@@ -257,7 +266,7 @@
         isHq: true,
     };
     const gameState = {
-        stage: 'INTRO',
+        stage: 'GAME',
     };
 
     const ownCode = await fetch(appScriptUrl)
@@ -509,7 +518,9 @@
 
         }
 
-        drawScanlines(timestamp);
+        if (settings.isHq){
+            drawScanlines(timestamp);
+        }
     }
 
     function drawMenu(timestamp) {
@@ -561,74 +572,39 @@
 
 
     function drawKeyboard(timestamp) {
-        const initalX = KEYBOARD.left + 30;
-        const initalY = KEYBOARD.top;
         const keySize = 95;
 
         ctxMain.save();
         for (const key of Object.values(keys)) {
-            const keyX = initalX + key.pos * keySize + key.groupRow * 50;
-            const keyY = initalY + key.groupRow * keySize;
+            const keyX = KEYBOARD.initalX + key.pos * keySize + key.groupRow * 50;
+            const keyY = KEYBOARD.initalY + key.groupRow * keySize;
 
             drawKey(key, keyX, keyY);
         }
         ctxMain.restore();
 
         ctxMain.save();
-        ctxMain.strokeStyle = '#0f7aff';
-        ctxMain.lineWidth = 1;
         if (settings.isHq) {
             ctxMain.shadowColor = '#0f7aff';
             ctxMain.shadowBlur = 3;
         }
-        ctxMain.beginPath();
 
-        const sepX = initalX - 10;
-        const sepY = initalY - 10;
-
-        ctxMain.moveTo(sepX, sepY);
-        ctxMain.lineTo(sepX + keySize * 3, sepY);
-        ctxMain.lineTo(sepX + keySize * 3, sepY + keySize);
-        ctxMain.lineTo(sepX + keySize * 4 - 45, sepY + keySize);
-        ctxMain.lineTo(sepX + keySize * 4 - 45, sepY + keySize * 2);
-        ctxMain.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 2);
-        ctxMain.lineTo(sepX + keySize * 4 + 5, sepY + keySize * 3);
-        ctxMain.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 3);
-        ctxMain.lineTo(sepX + keySize * 6 + 5, sepY + keySize * 2);
-        ctxMain.lineTo(sepX + keySize * 7 - 45, sepY + keySize * 2);
-        ctxMain.lineTo(sepX + keySize * 7 - 45, sepY + keySize);
-        ctxMain.lineTo(sepX + keySize * 7, sepY + keySize);
-        ctxMain.lineTo(sepX + keySize * 7, sepY);
-        ctxMain.lineTo(sepX + keySize * 10, sepY);
-
-        ctxMain.moveTo(sepX, sepY + keySize);
-        ctxMain.lineTo(sepX + keySize * 2, sepY + keySize);
-
-        ctxMain.moveTo(sepX + keySize - 50, sepY + keySize * 2);
-        ctxMain.lineTo(sepX + keySize * 3, sepY + keySize * 2);
-
-        ctxMain.moveTo(sepX + keySize * 8, sepY + keySize);
-        ctxMain.lineTo(sepX + keySize * 10, sepY + keySize);
-
-        ctxMain.moveTo(sepX + keySize * 7, sepY + keySize * 2);
-        ctxMain.lineTo(sepX + keySize * 9 + 50, sepY + keySize * 2);
-
-        ctxMain.moveTo(sepX + keySize * 4, sepY + keySize);
-        ctxMain.lineTo(sepX + keySize * 6, sepY + keySize);
-
-        ctxMain.moveTo(sepX + keySize * 5 - 50, sepY + keySize * 2);
-        ctxMain.lineTo(sepX + keySize * 5 + 50, sepY + keySize * 2);
-
-        ctxMain.stroke();
+        ctxMain.strokeStyle = '#0f7aff';
+        ctxMain.lineWidth = 1;
+        ctxMain.stroke(KEYBOARD.sepPath);
 
         ctxMain.strokeStyle = '#d7eaff';
         ctxMain.lineWidth = 5;
-
         ctxMain.globalCompositeOperation = 'overlay';
         ctxMain.setLineDash([5, 3 * keySize, 5, 5 * keySize, 5, 7 * keySize]);
         ctxMain.lineDashOffset = (timestamp / 8) % (15 * keySize + 15);
-        ctxMain.stroke();
+        ctxMain.stroke(KEYBOARD.sepPath);
 
+        ctxMain.restore();
+
+        ctxMain.save();
+        ctxMain.strokeStyle = '#d7eaff';
+        ctxMain.strokeRect(KEYBOARD.left, KEYBOARD.top, 10 * keySize + 20, 3 * keySize + 20);
         ctxMain.restore();
     }
 
@@ -744,7 +720,7 @@
         const offset = fl(timestamp/50) % (gridCellSize);
 
         ctxSec.scale(1.5, 0.75);
-        ctxSec.translate(-505, 350);
+        ctxSec.translate(-130, 350);
         ctxSec.strokeStyle = '#b000a3';
         if (settings.isHq) {
             ctxSec.shadowColor = '#e100d4';
@@ -832,6 +808,11 @@
         for(let scanlineIdx = -scanlineHeight; scanlineIdx < MAIN_AREA.height / scanlineHeight; scanlineIdx++) {
             ctxMain.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
             ctxMain.fillRect(0, scanlineIdx * scanlineHeight + offset, MAIN_AREA.width, scanlineHeight);
+
+            if (scanlineIdx % 2 === 0 && randBetween(0, 50) === 0) {
+                const imgd = ctxMain.getImageData(MAIN_AREA.left, MAIN_AREA.top + scanlineIdx * scanlineHeight + offset, MAIN_AREA.width, scanlineHeight);
+                ctxMain.putImageData(imgd, MAIN_AREA.left - 2, MAIN_AREA.top + scanlineIdx * scanlineHeight + offset);
+            }
         }
         ctxMain.restore();
 
@@ -840,12 +821,18 @@
         for(let scanlineIdx = -scanlineHeight; scanlineIdx < SEC_AREA.height / scanlineHeight; scanlineIdx++) {
             ctxSec.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
             ctxSec.fillRect(0, scanlineIdx * scanlineHeight + offset, SEC_AREA.width, scanlineHeight);
+
+            if (scanlineIdx % 2 === 0 && randBetween(0, 50) === 0) {
+                const imgd = ctxSec.getImageData(SEC_AREA.left, SEC_AREA.top + scanlineIdx * scanlineHeight + offset, SEC_AREA.width, scanlineHeight);
+                ctxSec.putImageData(imgd, SEC_AREA.left - 2, SEC_AREA.top + scanlineIdx * scanlineHeight + offset);
+            }
         }
         ctxSec.restore();
     }
 
     function updateCache() {
         prerenderLogo();
+        prerenderKeyboardSeparator();
     }
 
     function prerenderLogo() {
@@ -917,5 +904,17 @@
         // draw logo text
         drawRetroText('GRAND', 185, 150, 100);
         drawRetroText('HACKSTER', 85, 250, 100);
+    }
+
+    function prerenderKeyboardSeparator() {
+        KEYBOARD.sepPath = new Path2D(`
+            M${KEYBOARD.sepX} ${KEYBOARD.sepY} h285 v95 h50 v95 h50 v95 h190 v-95 h45 v-95 h45 v-95 h285
+            M${KEYBOARD.sepX} ${KEYBOARD.sepY + 95} h 190
+            M${KEYBOARD.sepX + 45} ${KEYBOARD.sepY + 190} h 245
+            M${KEYBOARD.sepX + 760} ${KEYBOARD.sepY + 95} h 190
+            M${KEYBOARD.sepX + 665} ${KEYBOARD.sepY + 190} h 245
+            M${KEYBOARD.sepX + 380} ${KEYBOARD.sepY + 95} h 190
+            M${KEYBOARD.sepX + 430} ${KEYBOARD.sepY + 190} h 95
+        `);
     }
 })();
