@@ -22,11 +22,10 @@
     const KEYBOARD = {
         left: 20,
         top: 425,
-        initalX: 40,
-        initalY: 445,
-        sepX: 30,
-        sepY: 435,
+        keySize: 95,
     };
+    KEYBOARD.width = 10 * KEYBOARD.keySize + 20;
+    KEYBOARD.height = 3 * KEYBOARD.keySize + 20;
 
     const CONSOLE = {
         top: 10,
@@ -137,20 +136,9 @@
     const ctxMain = document.querySelector('#mainArea').getContext('2d');
     const ctxSec = document.querySelector('#secArea').getContext('2d');
 
-    const canvasConsole = document.createElement('canvas');
-    canvasConsole.width = CONSOLE.width;
-    canvasConsole.height = CONSOLE.height;
-    ctxConsole = canvasConsole.getContext('2d');
-
-    const canvasLogo = document.createElement('canvas');
-    canvasLogo.width = SEC_AREA.width;
-    canvasLogo.height = SEC_AREA.height;
-    ctxLogo = canvasLogo.getContext('2d');
-
-    const canvasKeyboard = document.createElement('canvas');
-    canvasKeyboard.width = SEC_AREA.width;
-    canvasKeyboard.height = SEC_AREA.height;
-    ctxKeyboard = canvasKeyboard.getContext('2d');
+    const ctxConsole = createCrx(CONSOLE.width, CONSOLE.height);
+    const ctxLogo = createCrx(SEC_AREA.width, SEC_AREA.height);
+    const ctxKeyboard = createCrx(KEYBOARD.width, KEYBOARD.height);
 
     const imageSpace = document.querySelector('#sourceSpace');
     const imageAbout = document.querySelector('#sourceAbout');
@@ -208,6 +196,8 @@
 
         if (key && !key.isDestroyed) {
             key.isPushed = true;
+            clearKey(key);
+            drawKey(key);
 
             key.heat = Math.min(key.heat + 1, HEAT.max);
             if (key.heat === HEAT.max) {
@@ -242,6 +232,9 @@
 
         if (key) {
             key.isPushed = false;
+
+            clearKey(key);
+            drawKey(key);
         }
     });
 
@@ -306,6 +299,14 @@
         }
         return output;
     }
+
+    function createCrx(width, height) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        return canvas.getContext('2d');
+    }
+
 
     function init() {
         updateCache();
@@ -572,16 +573,7 @@
 
 
     function drawKeyboard(timestamp) {
-        const keySize = 95;
-
-        ctxMain.save();
-        for (const key of Object.values(keys)) {
-            const keyX = KEYBOARD.initalX + key.pos * keySize + key.groupRow * 50;
-            const keyY = KEYBOARD.initalY + key.groupRow * keySize;
-
-            drawKey(key, keyX, keyY);
-        }
-        ctxMain.restore();
+        ctxMain.drawImage(ctxKeyboard.canvas, KEYBOARD.left, KEYBOARD.top);
 
         ctxMain.save();
         if (settings.isHq) {
@@ -596,36 +588,40 @@
         ctxMain.strokeStyle = '#d7eaff';
         ctxMain.lineWidth = 5;
         ctxMain.globalCompositeOperation = 'overlay';
-        ctxMain.setLineDash([5, 3 * keySize, 5, 5 * keySize, 5, 7 * keySize]);
-        ctxMain.lineDashOffset = (timestamp / 8) % (15 * keySize + 15);
+        ctxMain.setLineDash([5, 3 * KEYBOARD.keySize, 5, 5 * KEYBOARD.keySize, 5, 7 * KEYBOARD.keySize]);
+        ctxMain.lineDashOffset = (timestamp / 8) % (15 * KEYBOARD.keySize + 15);
         ctxMain.stroke(KEYBOARD.sepPath);
 
         ctxMain.restore();
-
-        ctxMain.save();
-        ctxMain.strokeStyle = '#d7eaff';
-        ctxMain.strokeRect(KEYBOARD.left, KEYBOARD.top, 10 * keySize + 20, 3 * keySize + 20);
-        ctxMain.restore();
     }
 
-    function drawKey(key, x, y) {
-        ctxMain.save();
+    function clearKey(key) {
+        const x = 10 + key.pos * KEYBOARD.keySize + key.groupRow * 50;
+        const y = 10 + key.groupRow * KEYBOARD.keySize;
+
+        ctxKeyboard.clearRect(x, y, 100, 100);
+    }
+
+    function drawKey(key) {
+        const x = 20 + key.pos * KEYBOARD.keySize + key.groupRow * 50;
+        const y = 20 + key.groupRow * KEYBOARD.keySize;
+        ctxKeyboard.save();
 
         // box
-        ctxMain.strokeStyle = getKeyStyle(key, {upState: '#ffc5f2'});
-        ctxMain.lineWidth = 3;
+        ctxKeyboard.strokeStyle = getKeyStyle(key, {upState: '#ffc5f2'});
+        ctxKeyboard.lineWidth = 3;
         if (settings.isHq) {
-            ctxMain.shadowBlur = key.isPushed ? 1 : 5;
-            ctxMain.shadowColor = getKeyStyle(key);
+            ctxKeyboard.shadowBlur = key.isPushed ? 1 : 5;
+            ctxKeyboard.shadowColor = getKeyStyle(key);
         }
-        ctxMain.fillStyle = COLOR.bg;
-        ctxMain.strokeRect(x, y, 75, 75);
+        ctxKeyboard.fillStyle = COLOR.bg;
+        ctxKeyboard.strokeRect(x, y, 75, 75);
 
-        ctxMain.fillRect(x, y, 75, 75);
+        ctxKeyboard.fillRect(x, y, 75, 75);
 
         // heat leds
         if (settings.isHq) {
-            ctxMain.shadowBlur = 10;
+            ctxKeyboard.shadowBlur = 10;
         }
 
         const degree = fl(key.heat / 6);
@@ -639,18 +635,18 @@
         }
 
         // char
-        ctxMain.strokeStyle = getKeyStyle(key);
-        ctxMain.lineWidth = 2;
+        ctxKeyboard.strokeStyle = getKeyStyle(key);
+        ctxKeyboard.lineWidth = 2;
         if (settings.isHq) {
-            ctxMain.shadowBlur = 10;
-            ctxMain.shadowColor = getKeyStyle(key);
+            ctxKeyboard.shadowBlur = 10;
+            ctxKeyboard.shadowColor = getKeyStyle(key);
         }
-        ctxMain.lineWidth = 1;
-        ctxMain.font = '70px monospace';
-        ctxMain.textBaseline = 'top';
-        ctxMain.textAlign = 'left';
-        ctxMain.strokeText(key.name.toUpperCase(), x + 17, y + 7);
-        ctxMain.restore();
+        ctxKeyboard.lineWidth = 1;
+        ctxKeyboard.font = '70px monospace';
+        ctxKeyboard.textBaseline = 'top';
+        ctxKeyboard.textAlign = 'left';
+        ctxKeyboard.strokeText(key.name.toUpperCase(), x + 17, y + 7);
+        ctxKeyboard.restore();
     }
 
     function getHeatStyle(heatDegree) {
@@ -673,9 +669,9 @@
     }
 
     function drawKeyboardLed(x, y, color) {
-        ctxMain.shadowColor = color;
-        ctxMain.fillStyle = color;
-        ctxMain.fillRect(x, y, 5, 5);
+        ctxKeyboard.shadowColor = color;
+        ctxKeyboard.fillStyle = color;
+        ctxKeyboard.fillRect(x, y, 5, 5);
     }
 
 
@@ -822,6 +818,7 @@
 
     function updateCache() {
         prerenderLogo();
+        prerenderKeyboard();
         prerenderKeyboardSeparator();
     }
 
@@ -896,15 +893,21 @@
         drawRetroText('HACKSTER', 85, 250, 100);
     }
 
+    function prerenderKeyboard() {
+        for (const key of Object.values(keys)) {
+            drawKey(key);
+        }
+    }
+
     function prerenderKeyboardSeparator() {
         KEYBOARD.sepPath = new Path2D(`
-            M${KEYBOARD.sepX} ${KEYBOARD.sepY} h285 v95 h50 v95 h50 v95 h190 v-95 h45 v-95 h45 v-95 h285
-            M${KEYBOARD.sepX} ${KEYBOARD.sepY + 95} h 190
-            M${KEYBOARD.sepX + 45} ${KEYBOARD.sepY + 190} h 245
-            M${KEYBOARD.sepX + 760} ${KEYBOARD.sepY + 95} h 190
-            M${KEYBOARD.sepX + 665} ${KEYBOARD.sepY + 190} h 245
-            M${KEYBOARD.sepX + 380} ${KEYBOARD.sepY + 95} h 190
-            M${KEYBOARD.sepX + 430} ${KEYBOARD.sepY + 190} h 95
+            M${KEYBOARD.left + 10} ${KEYBOARD.top + 10} h285 v95 h50 v95 h50 v95 h190 v-95 h45 v-95 h45 v-95 h285
+            M${KEYBOARD.left + 10} ${KEYBOARD.top + 10 + 95} h 190
+            M${KEYBOARD.left + 10 + 45} ${KEYBOARD.top + 10 + 190} h 245
+            M${KEYBOARD.left + 10 + 760} ${KEYBOARD.top + 10 + 95} h 190
+            M${KEYBOARD.left + 10 + 665} ${KEYBOARD.top + 10 + 190} h 245
+            M${KEYBOARD.left + 10 + 380} ${KEYBOARD.top + 10 + 95} h 190
+            M${KEYBOARD.left + 10 + 430} ${KEYBOARD.top + 10 + 190} h 95
         `);
     }
 })();
