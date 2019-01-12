@@ -278,6 +278,7 @@
     function fl(n) {
         return Math.floor(n);
     }
+
     function rnd() {
         return Math.random();
     }
@@ -293,7 +294,7 @@
 
     function chunk(input, chunkLen) {
         output = [];
-        while(input.length){
+        while (input.length) {
             output.push(input.slice(0, chunkLen));
             input = input.slice(chunkLen);
         }
@@ -391,7 +392,7 @@
             cellCol * CONSOLE.gridCellWidth,
             cellRow * CONSOLE.gridCellHeight,
             CONSOLE.gridCellWidth,
-            CONSOLE.gridCellHeight
+            CONSOLE.gridCellHeight,
         );
 
         ctxConsole.fillText(cell.char,
@@ -409,7 +410,7 @@
             cellCol * CONSOLE.gridCellWidth,
             cellRow * CONSOLE.gridCellHeight,
             CONSOLE.gridCellWidth,
-            CONSOLE.gridCellHeight
+            CONSOLE.gridCellHeight,
         );
 
         ctxConsole.fillStyle = '#00ff00';
@@ -519,7 +520,7 @@
 
         }
 
-        if (settings.isHq){
+        if (settings.isHq) {
             drawScanlines(timestamp);
         }
     }
@@ -543,7 +544,7 @@
             if (systemMenu.selectedItem === menuIdx) {
                 ctxMain.fillText('#>',
                     x - (systemMenu.list[menuIdx].length + 4) * 20,
-                    y
+                    y,
                 );
             }
         }
@@ -559,7 +560,7 @@
         ctxMain.fillStyle = '#f9edff';
         if (settings.isHq) {
             ctxMain.shadowColor = '#ad0fbb';
-        ctxMain.shadowBlur = 3;
+            ctxMain.shadowBlur = 3;
         }
         ctxMain.textAlign = 'left';
         ctxMain.font = '20px monospace';
@@ -627,7 +628,7 @@
         const degree = fl(key.heat / 6);
 
         if (degree < 5) {
-            for(const degreeIdx of [1,2,3,4]){
+            for (const degreeIdx of [1, 2, 3, 4]) {
                 if (degree >= degreeIdx) {
                     drawKeyboardLed(x + 65, y + 75 - degreeIdx * 10, getHeatStyle(degreeIdx));
                 }
@@ -678,17 +679,17 @@
     function drawRetroText(text, x, y, height) {
         const gradient = ctxLogo.createLinearGradient(
             x, y + 9,
-            x, y + height - 15
+            x, y + height - 15,
         );
 
-        gradient.addColorStop(0,    '#3037d6');
-        gradient.addColorStop(0.05,  '#3037d6');
-        gradient.addColorStop(0.4,  '#f9a9ff');
-        gradient.addColorStop(0.52,  '#ffffff');
+        gradient.addColorStop(0, '#3037d6');
+        gradient.addColorStop(0.05, '#3037d6');
+        gradient.addColorStop(0.4, '#f9a9ff');
+        gradient.addColorStop(0.52, '#ffffff');
         gradient.addColorStop(0.53, '#3f34cd');
         gradient.addColorStop(0.58, '#bc28ff');
         gradient.addColorStop(0.91, '#ffd1f9');
-        gradient.addColorStop(1,    '#ffffff');
+        gradient.addColorStop(1, '#ffffff');
 
         ctxLogo.save();
         ctxLogo.fillStyle = gradient;
@@ -698,11 +699,11 @@
             ctxLogo.shadowBlur = 55;
             ctxLogo.shadowColor = '#a834cd';
         }
-        ctxLogo.fillText(text, x,y-5);
+        ctxLogo.fillText(text, x, y - 5);
         ctxLogo.strokeStyle = '#eee';
         ctxLogo.lineWidth = 5;
         ctxLogo.globalCompositeOperation = 'soft-light';
-        ctxLogo.strokeText(text, x,y-5);
+        ctxLogo.strokeText(text, x, y - 5);
         ctxLogo.restore();
     }
 
@@ -713,7 +714,7 @@
         // draw console grid
         const gridSize = 750;
         const gridCellSize = 50;
-        const offset = fl(timestamp/50) % (gridCellSize);
+        const offset = fl(timestamp / 50) % (gridCellSize);
 
         ctxSec.scale(1.5, 0.75);
         ctxSec.translate(-130, 350);
@@ -731,10 +732,10 @@
             ctxSec.lineTo(gridIdx * gridCellSize,
                 gridSize / 2);
 
-            ctxSec.moveTo(gridSize * 0.25 - (gridIdx-2) * gridCellSize * 0.25 - offset * 0.5,
-                (gridIdx-2) * gridCellSize / 2 + offset);
-            ctxSec.lineTo((gridSize * 0.75) + (gridIdx-2) * gridCellSize * 0.25 + offset * 0.5,
-                (gridIdx-2) * gridCellSize / 2 + offset);
+            ctxSec.moveTo(gridSize * 0.25 - (gridIdx - 2) * gridCellSize * 0.25 - offset * 0.5,
+                (gridIdx - 2) * gridCellSize / 2 + offset);
+            ctxSec.lineTo((gridSize * 0.75) + (gridIdx - 2) * gridCellSize * 0.25 + offset * 0.5,
+                (gridIdx - 2) * gridCellSize / 2 + offset);
         }
 
         ctxSec.stroke();
@@ -756,7 +757,7 @@
                 CONSOLE.left + selectedArea.col * CONSOLE.width / 3,
                 CONSOLE.top + selectedArea.row * CONSOLE.height / 3,
                 CONSOLE.width / 3,
-                CONSOLE.height / 3
+                CONSOLE.height / 3,
             );
         }
 
@@ -797,11 +798,11 @@
 
     function drawScanlines(timestamp) {
         const scanlineHeight = 5;
-        const offset = fl(timestamp/40) % (scanlineHeight*2);
+        const offset = fl(timestamp / 40) % (scanlineHeight * 2);
 
         ctxMain.save();
         ctxMain.globalCompositeOperation = 'multiply';
-        for(let scanlineIdx = -scanlineHeight; scanlineIdx < MAIN_AREA.height / scanlineHeight; scanlineIdx++) {
+        for (let scanlineIdx = -scanlineHeight; scanlineIdx < MAIN_AREA.height / scanlineHeight; scanlineIdx++) {
             ctxMain.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
             ctxMain.fillRect(0, scanlineIdx * scanlineHeight + offset, MAIN_AREA.width, scanlineHeight);
         }
@@ -809,7 +810,7 @@
 
         ctxSec.save();
         ctxSec.globalCompositeOperation = 'multiply';
-        for(let scanlineIdx = -scanlineHeight; scanlineIdx < SEC_AREA.height / scanlineHeight; scanlineIdx++) {
+        for (let scanlineIdx = -scanlineHeight; scanlineIdx < SEC_AREA.height / scanlineHeight; scanlineIdx++) {
             ctxSec.fillStyle = (scanlineIdx % 2 === 0) ? '#ccc' : '#eee';
             ctxSec.fillRect(0, scanlineIdx * scanlineHeight + offset, SEC_AREA.width, scanlineHeight);
         }
@@ -831,12 +832,12 @@
 
         const maskGradient = ctxLogo.createLinearGradient(
             SEC_AREA.width / 2, maskTop,
-            SEC_AREA.width / 2, maskTop + maskHeight
+            SEC_AREA.width / 2, maskTop + maskHeight,
         );
 
-        maskGradient.addColorStop(0,    COLOR.bg);
-        maskGradient.addColorStop(0.25,    COLOR.bg);
-        maskGradient.addColorStop(1,  'transparent');
+        maskGradient.addColorStop(0, COLOR.bg);
+        maskGradient.addColorStop(0.25, COLOR.bg);
+        maskGradient.addColorStop(1, 'transparent');
 
         ctxLogo.fillStyle = maskGradient;
         ctxLogo.fillRect(0, maskTop, SEC_AREA.width, maskHeight);
@@ -851,7 +852,7 @@
             ctxLogo.shadowColor = '#0400af';
             ctxLogo.shadowOffsetX = bgCloudSize;
             ctxLogo.shadowOffsetY = bgCloudSize;
-            ctxLogo.fillRect( -bgCloudSize, 0 - bgCloudSize, bgCloudSize, bgCloudSize);
+            ctxLogo.fillRect(-bgCloudSize, 0 - bgCloudSize, bgCloudSize, bgCloudSize);
             ctxLogo.restore();
 
             ctxLogo.save();
@@ -910,4 +911,161 @@
             M${KEYBOARD.left + 10 + 430} ${KEYBOARD.top + 10 + 190} h 95
         `);
     }
+
+    class Grid {
+        constructor(stageCellSize) {
+            this.stageSize = 3 + 4 * stageCellSize;
+            this.generateStage(this.stageSize);
+        }
+
+        generateStage(side) {
+            const squareSize = side ** 2;
+            const preStage = new Array(squareSize).fill('#');
+
+            for (const idx in preStage) {
+                if (!this.isStageWall(+idx, side)) {
+                    preStage[idx] = ' ';
+                }
+            }
+            for (const idx in preStage) {
+                if (this.isStageBoundary(+idx, side)) {
+                    preStage[idx] = 'X';
+                }
+            }
+
+            let startPoint = null;
+            while (!startPoint) {
+                const proposedPoint = randBetween(0, squareSize - 1);
+
+                if (this.isStageBoundary(proposedPoint, side)) {
+                    startPoint = proposedPoint;
+                }
+            }
+            const {x: x1, y: y1} = this.getCoors(startPoint);
+
+            let endPoint = null;
+            while (!endPoint) {
+                const proposedPoint = randBetween(0, squareSize - 1);
+                const {x: x2, y: y2} = this.getCoors(proposedPoint);
+
+                if (this.isStageBoundary(proposedPoint, side)
+                    && Math.abs(x2 - x1) > ((side - 2) / 2)
+                    && Math.abs(y2 - y1) > ((side - 2) / 2)
+                    && (
+                        (y1 === 0 && y2 !== side - 1)
+                        || (y1 === side -1 && y2 !== 0)
+                        || (x1 === 0 && x2 !== side - 1)
+                        || (x1 === side -1 && x2 !== 0)
+                    )
+                ) {
+                    endPoint = proposedPoint;
+                }
+            }
+            const {x: x2, y: y2} = this.getCoors(endPoint);
+
+            this.stage = preStage;
+
+            this.stage[startPoint] = ',';
+            this.stage[endPoint] = '.';
+
+
+            const midX = fl((x1+x2 >= side) ? 0.1 * side : 0.9 * side);
+            const midY = fl((y1+y2 >= side) ? 0.1 * side : 0.9 * side);
+
+            const fn1 = this.getLineFunc(x1, y1, midX, midY);
+            const fn2 = this.getLineFunc(midX, midY, x2, y2);
+
+            const startX1 = Math.min(x1, midX);
+            const endX1 = Math.max(x1, midX);
+
+            const startX2 = Math.min(midX, x2);
+            const endX2 = Math.max(midX, x2);
+
+            for (let lineX = startX1; lineX < endX1; lineX++) {
+                this.setPoint(lineX, fn1(lineX), '1');
+            }
+            for (let lineX = startX2; lineX < endX2; lineX++) {
+                this.setPoint(lineX, fn2(lineX), '2');
+            }
+
+            this.setPoint(midX, midY, '%');
+            
+        }
+
+        getPointsDist(point1, point2) {
+            const {x: x1, y: y1} = this.getCoors(point1);
+            const {x: x2, y: y2} = this.getCoors(point2);
+
+            return Math.hypot(x1 - x2, y1 - y2);
+        }
+
+        printStage() {
+            return chunk(this.stage, this.stage.length ** 0.5).map(x => x.join(' ')).join('\n');
+        }
+
+        isStageWall(idx, side) {
+            const {x, y} = this.getCoors(idx);
+
+            return !((
+                y % 2 === 1 // odd row without first and last col
+                && x !== 0
+                && x !== side - 1
+            ) || (
+                x % 2 === 1 // odd col without first and last row
+                && y !== 0
+                && y !== side - 1
+            ));
+        }
+
+        isStageBoundary(idx, side) {
+            const {x, y} = this.getCoors(idx);
+
+            return (
+                (
+                    x === 0
+                    || x === side - 1
+                    || y === 0
+                    || y === side - 1
+
+                ) && !(
+                    (x === 0 && y === 0)
+                    || (x === side - 1 && y === 0)
+                    || (x === 0 && y === side - 1)
+                    || (x === side - 1 && y === side - 1)
+                )
+            );
+        }
+
+
+        getPoint(x, y) {
+            return this.stage[y * this.stageSize + x % this.stageSize];
+        }
+
+        setPoint(x, y, val) {
+            this.stage[y * this.stageSize + (x % this.stageSize)] = val;
+        }
+
+        getCoors(idx) {
+            return {
+                x: idx % this.stageSize,
+                y: fl(idx / this.stageSize),
+            }
+        }
+
+        getLineFunc(x1, y1, x2, y2) {
+            const a = (y2 - y1) / (x2 - x1);
+            const b = (y1 * x2 - y2 * x1) / (x2 - x1);
+
+            return (x) => Math.round(a * x + b);
+        }
+
+    }
+
+    const stageCellSize = 5;
+    const stage = new Grid(stageCellSize);
+
+    console.log(stage.printStage());
+
 })();
+
+
