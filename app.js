@@ -933,63 +933,54 @@
                 }
             }
 
-            let startPoint = null;
-            while (!startPoint) {
-                const proposedPoint = randBetween(0, squareSize - 1);
+            const quarters = [
+                {
+                    xs: 0, xe: fl(side / 2),
+                    ys: 0, ye: fl(side / 2),
+                },
+                {
+                    xs: fl(side / 2) + 1, xe: side,
+                    ys: 0, ye: fl(side / 2),
+                },
+                {
+                    xs: 0, xe: fl(side / 2),
+                    ys: fl(side / 2) + 1, ye: side,
+                },
+                {
+                    xs: fl(side / 2) + 1, xe: side,
+                    ys: fl(side / 2) + 1, ye: side,
+                },
+            ].sort(x => Math.random() - 0.5);
 
-                if (this.isStageBoundary(proposedPoint, side)) {
-                    startPoint = proposedPoint;
-                }
-            }
-            const {x: x1, y: y1} = this.getCoors(startPoint);
-
-            let endPoint = null;
-            while (!endPoint) {
-                const proposedPoint = randBetween(0, squareSize - 1);
-                const {x: x2, y: y2} = this.getCoors(proposedPoint);
-
-                if (this.isStageBoundary(proposedPoint, side)
-                    && Math.abs(x2 - x1) > ((side - 2) / 2)
-                    && Math.abs(y2 - y1) > ((side - 2) / 2)
-                    && (
-                        (y1 === 0 && y2 !== side - 1)
-                        || (y1 === side -1 && y2 !== 0)
-                        || (x1 === 0 && x2 !== side - 1)
-                        || (x1 === side -1 && x2 !== 0)
-                    )
-                ) {
-                    endPoint = proposedPoint;
-                }
-            }
-            const {x: x2, y: y2} = this.getCoors(endPoint);
+            const startPoint = {
+                x: randBetween(quarters[0].xs, quarters[0].xe),
+                y: randBetween(quarters[0].ys, quarters[0].ye),
+            };
+            const midPoint = {
+                x: randBetween(quarters[1].xs, quarters[1].xe),
+                y: randBetween(quarters[1].ys, quarters[1].ye),
+            };
+            const endPoint = {
+                x: randBetween(quarters[2].xs, quarters[2].xe),
+                y: randBetween(quarters[2].ys, quarters[2].ye),
+            };
 
             this.stage = preStage;
 
-            this.stage[startPoint] = ',';
-            this.stage[endPoint] = '.';
+            for (const qi in quarters) {
+                console.log(`q`, qi);
+                const q = quarters[qi];
 
-
-            const midX = fl((x1+x2 >= side) ? 0.1 * side : 0.9 * side);
-            const midY = fl((y1+y2 >= side) ? 0.1 * side : 0.9 * side);
-
-            const fn1 = this.getLineFunc(x1, y1, midX, midY);
-            const fn2 = this.getLineFunc(midX, midY, x2, y2);
-
-            const startX1 = Math.min(x1, midX);
-            const endX1 = Math.max(x1, midX);
-
-            const startX2 = Math.min(midX, x2);
-            const endX2 = Math.max(midX, x2);
-
-            for (let lineX = startX1; lineX < endX1; lineX++) {
-                this.setPoint(lineX, fn1(lineX), '1');
-            }
-            for (let lineX = startX2; lineX < endX2; lineX++) {
-                this.setPoint(lineX, fn2(lineX), '2');
+                for (let qxi = q.xs; qxi < q.xe; qxi++) {
+                    for (let qyi = q.ys; qyi < q.ye; qyi++) {
+                        this.setPoint(qxi, qyi, qi);
+                    }
+                }
             }
 
-            this.setPoint(midX, midY, '%');
-            
+            this.setPoint(startPoint.x, startPoint.y, 's');
+            this.setPoint(midPoint.x, midPoint.y, 'm');
+            this.setPoint(endPoint.x, endPoint.y, 'e');
         }
 
         getPointsDist(point1, point2) {
