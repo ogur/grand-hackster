@@ -914,12 +914,12 @@
 
     class Grid {
         constructor(stageCellSize) {
-            this.stageSize = 3 + 4 * stageCellSize;
+            this.side = 3 + 4 * stageCellSize;
             this.generateStage();
         }
 
         generateStage() {
-            const squareSize = this.stageSize ** 2;
+            const squareSize = this.side ** 2;
             const preStage = new Array(squareSize).fill('#');
 
             for (const idx in preStage) {
@@ -935,24 +935,24 @@
 
             const quarters = [
                 {
-                    xs: 0, xe: fl(this.stageSize / 2),
-                    ys: 0, ye: fl(this.stageSize / 2),
+                    xs: 0, xe: fl(this.side / 2),
+                    ys: 0, ye: fl(this.side / 2),
                 },
                 {
-                    xs: fl(this.stageSize / 2) + 1, xe: this.stageSize,
-                    ys: 0, ye: fl(this.stageSize / 2),
+                    xs: fl(this.side / 2) + 1, xe: this.side,
+                    ys: 0, ye: fl(this.side / 2),
                 },
                 {
-                    xs: 0, xe: fl(this.stageSize / 2),
-                    ys: fl(this.stageSize / 2) + 1, ye: this.stageSize,
+                    xs: 0, xe: fl(this.side / 2),
+                    ys: fl(this.side / 2) + 1, ye: this.side,
                 },
                 {
-                    xs: fl(this.stageSize / 2) + 1, xe: this.stageSize,
-                    ys: fl(this.stageSize / 2) + 1, ye: this.stageSize,
+                    xs: fl(this.side / 2) + 1, xe: this.side,
+                    ys: fl(this.side / 2) + 1, ye: this.side,
                 },
             ];
 
-            console.log(`this.stageSize`, this.stageSize);
+            console.log(`this.stageSize`, this.side);
             const startQuarterIdx = randOf([0,1,2,3]);
 
             console.log(`startQuarterIdx`, startQuarterIdx, 3 - startQuarterIdx);
@@ -977,10 +977,10 @@
 
             this.stage = preStage;
 
-            for (let i = 0; i < (this.stageSize ** 2 ) / 6; i++) {
+            for (let i = 0; i < (this.side ** 2 ) / 6; i++) {
                 this.setPoint(
-                    randBetween(0, this.stageSize),
-                    randBetween(0, this.stageSize),
+                    randBetween(0, this.side),
+                    randBetween(0, this.side),
                     '#'
                 );
             }
@@ -1094,11 +1094,11 @@
             return !((
                 y % 2 === 1 // odd row without first and last col
                 && x !== 0
-                && x !== this.stageSize - 1
+                && x !== this.side - 1
             ) || (
                 x % 2 === 1 // odd col without first and last row
                 && y !== 0
-                && y !== this.stageSize - 1
+                && y !== this.side - 1
             ));
         }
 
@@ -1108,41 +1108,37 @@
             return (
                 (
                     x === 0
-                    || x === this.stageSize - 1
+                    || x === this.side - 1
                     || y === 0
-                    || y === this.stageSize - 1
+                    || y === this.side - 1
 
                 ) && !(
                     (x === 0 && y === 0)
-                    || (x === this.stageSize - 1 && y === 0)
-                    || (x === 0 && y === this.stageSize - 1)
-                    || (x === this.stageSize - 1 && y === this.stageSize - 1)
+                    || (x === this.side - 1 && y === 0)
+                    || (x === 0 && y === this.side - 1)
+                    || (x === this.side - 1 && y === this.side - 1)
                 )
             );
         }
 
 
         getPoint(x, y) {
-            return this.stage[y * this.stageSize + x % this.stageSize];
+            return this.stage[y * this.side + x % this.side];
         }
 
         getPointNoWrap(x, y) {
-            if (x >= this.stageSize || y >= this.stageSize || x < 0 || y < 0) {
+            if (x >= this.side || y >= this.side || x < 0 || y < 0) {
                 return null;
             }
-            return this.stage[y * this.stageSize + x % this.stageSize];
+            return this.stage[y * this.side + x % this.side];
         }
 
         getPointsAround(x, y) {
             const points = [
-                // {x: x - 1, y: y - 1},
                 {x: x, y: y - 1},
-                // {x: x + 1, y: y - 1},
                 {x: x - 1, y: y},
                 {x: x + 1, y: y},
-                // {x: x - 1, y: y + 1},
                 {x: x, y: y + 1},
-                // {x: x + 1, y: y + 1},
             ];
 
             return points
@@ -1170,13 +1166,13 @@
         }
 
         setPoint(x, y, val) {
-            this.stage[y * this.stageSize + (x % this.stageSize)] = val;
+            this.stage[y * this.side + (x % this.side)] = val;
         }
 
         getCoors(idx) {
             return {
-                x: idx % this.stageSize,
-                y: fl(idx / this.stageSize),
+                x: idx % this.side,
+                y: fl(idx / this.side),
             }
         }
 
@@ -1187,10 +1183,15 @@
             return (x) => Math.round(a * x + b);
         }
 
+        checkPass(stage, startPoint, endPoint) {
+
+        }
     }
 
     const stageCellSize = 6;
     const stage = new Grid(stageCellSize);
+
+
 
     console.log(...stage.printStage());
 
