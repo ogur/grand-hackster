@@ -130,6 +130,268 @@
     let isSwitchingEnabled = false;
     const selectedArea = {row: null, col: null};
 
+    class Grid {
+        constructor(stageCellSize) {
+            this.side = 3 + 4 * stageCellSize;
+        }
+
+        get data() {
+            return this.stage;
+        }
+
+        generateStage() {
+            const squareSize = this.side ** 2;
+            const preStage = new Array(squareSize).fill('#');
+
+            for (const idx in preStage) {
+                if (!this.isStageObstacle(+idx)) {
+                    preStage[idx] = '.';
+                }
+            }
+            for (const idx in preStage) {
+                if (this.isStageBoundary(+idx)) {
+                    preStage[idx] = 'X';
+                }
+            }
+
+            const quarters = [
+                {
+                    xs: 0, xe: fl(this.side / 2),
+                    ys: 0, ye: fl(this.side / 2),
+                },
+                {
+                    xs: fl(this.side / 2) + 1, xe: this.side,
+                    ys: 0, ye: fl(this.side / 2),
+                },
+                {
+                    xs: 0, xe: fl(this.side / 2),
+                    ys: fl(this.side / 2) + 1, ye: this.side,
+                },
+                {
+                    xs: fl(this.side / 2) + 1, xe: this.side,
+                    ys: fl(this.side / 2) + 1, ye: this.side,
+                },
+            ];
+
+            const startQuarterIdx = randOf([0,1,2,3]);
+
+            const startPoint = {};
+            if (rnd() > 0.5) {
+                startPoint.x = Math.max(0, quarters[startQuarterIdx].xs - 1) * 2;
+                startPoint.y = randBetween(quarters[startQuarterIdx].ys + 1, quarters[startQuarterIdx].ye - 1);
+            } else {
+                startPoint.x = randBetween(quarters[startQuarterIdx].xs + 1, quarters[startQuarterIdx].xe - 1);
+                startPoint.y = Math.max(0, quarters[startQuarterIdx].ys - 1) * 2;
+            }
+
+            const endPoint = {
+                x: randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1),
+                y: randBetween(quarters[3 - startQuarterIdx].ys + 1, quarters[3 - startQuarterIdx].ye - 1),
+            };
+
+            this.stage = preStage;
+
+            for (let i = 0; i < (this.side ** 2 ) / 4; i++) {
+                this.setPoint(
+                    randBetween(0, this.side),
+                    randBetween(0, this.side),
+                    '#'
+                );
+            }
+
+            let stepIdx = 1;
+            let paCollLast = [];
+            let paColl = [startPoint];
+
+            while (paColl.length > 0) {
+                paCollLast = paColl.slice();
+                paColl = [];
+                for (const pa of paCollLast) {
+                    const paInner = this.getPointsAround(pa.x, pa.y)
+                        .filter((p) => p.val === '.');
+                    paColl.push(...paInner);
+                }
+
+                paColl = Object.values(paColl.reduce((acc, p) => {
+                    acc[`${p.x}_${p.y}`] = p;
+                    return acc;
+                }, {}));
+
+                paColl.forEach((p) => this.setPoint(p.x, p.y, stepIdx));
+                stepIdx++;
+            }
+
+            if (['#', '.'].includes(this.getPoint(endPoint.x, endPoint.y))) {
+                console.log('stage was unsolvable');
+                return this.generateStage();
+            }
+
+            this.setPoint(startPoint.x, startPoint.y, 's');
+            this.setPoint(endPoint.x, endPoint.y, 'e');
+
+            let paEnd = endPoint;
+            let paEndList = [];
+            do {
+                paEndList = this.getPointsAround(paEnd.x, paEnd.y)
+                    .filter((p) => `${p.val}`.match(/(\d|s)/));
+
+                if (paEndList.length) {
+                    paEnd = this.getLowest([paEnd, ...paEndList]);
+                    this.setPoint(paEnd.x, paEnd.y, 'e');
+                }
+            } while (paEndList.length > 0);
+
+            for (const idx in this.stage) {
+                if (this.stage[idx] === '.') {
+                    this.stage[idx] = '+';
+                }
+            }
+        }
+
+        printStage() {
+            const rawData = chunk(this.stage, this.stage.length ** 0.5)
+                .map(x => {
+                    return x.map(val => {
+                        return `${val}`.replace(/\d+/, (str) => {
+                            return (+str) % 10;
+                        });
+                    }).join(' ');
+                })
+                .join('\n');
+
+            const formatedData = [];
+            const styleData = [];
+
+            const maxVal = this.stage.reduce((acc, n) => {
+                if (Number.isNaN(+n)) {
+                    return acc;
+                }
+                return acc < n ? n : acc;
+            }, 0);
+
+            console.log(`maxVal`, maxVal);
+
+            for (const charIdx in rawData) {
+                formatedData[charIdx] = rawData[charIdx];
+                if (rawData[charIdx] === '.') {
+                    formatedData[charIdx] = '%c.';
+                    styleData.push('color: purple');
+                } else if (rawData[charIdx] === 'X') {
+                    formatedData[charIdx] = '%cX';
+                    styleData.push('color: red');
+                } else if (rawData[charIdx] === '#') {
+                    formatedData[charIdx] = '%c#';
+                    styleData.push('color: red');
+                } else if (rawData[charIdx] === '+') {
+                    formatedData[charIdx] = '%c#';
+                    styleData.push('color: darkred');
+                } else if (rawData[charIdx] === 's') {
+                    formatedData[charIdx] = '%cs';
+                    styleData.push('color: white');
+                } else if (rawData[charIdx] === 'e') {
+                    formatedData[charIdx] = '%ce';
+                    styleData.push('color: white');
+                } else if (rawData[charIdx] === 'm') {
+                    formatedData[charIdx] = '%cm';
+                    styleData.push('color: white');
+                } else if (rawData[charIdx].match(/\d/)) {
+                    formatedData[charIdx] = '%c' + rawData[charIdx];
+                    styleData.push(`color: rgb(0, ${this.stage[fl(charIdx/2)] * (255 / maxVal)}, 0)`);
+                }
+            }
+
+            return [formatedData.join(''), ...styleData];
+        }
+
+        isStageObstacle(idx) {
+            const {x, y} = this.getCoors(idx);
+
+            return !((
+                y % 2 === 1 // odd row without first and last col
+                && x !== 0
+                && x !== this.side - 1
+            ) || (
+                x % 2 === 1 // odd col without first and last row
+                && y !== 0
+                && y !== this.side - 1
+            ));
+        }
+
+        isStageBoundary(idx) {
+            const {x, y} = this.getCoors(idx);
+
+            return (
+                (
+                    x === 0
+                    || x === this.side - 1
+                    || y === 0
+                    || y === this.side - 1
+
+                ) && !(
+                    (x === 0 && y === 0)
+                    || (x === this.side - 1 && y === 0)
+                    || (x === 0 && y === this.side - 1)
+                    || (x === this.side - 1 && y === this.side - 1)
+                )
+            );
+        }
+
+
+        getPoint(x, y) {
+            return this.stage[y * this.side + x % this.side];
+        }
+
+        getPointNoWrap(x, y) {
+            if (x >= this.side || y >= this.side || x < 0 || y < 0) {
+                return null;
+            }
+            return this.stage[y * this.side + x % this.side];
+        }
+
+        getPointsAround(x, y) {
+            const points = [
+                {x: x, y: y - 1},
+                {x: x - 1, y: y},
+                {x: x + 1, y: y},
+                {x: x, y: y + 1},
+            ];
+
+            return points
+                .map((point) => {
+                    return {
+                        ...point,
+                        val: this.getPointNoWrap(point.x, point.y),
+                    }
+                })
+                .filter((point) => {
+                    return !!point.val;
+                });
+        }
+
+        getLowest(points) {
+            return points.reduce((acc, n) => {
+                if (acc.val === 's') {
+                    return acc;
+                }
+                if (n.val === 's') {
+                    return n;
+                }
+                return acc.val < n.val ? acc : n;
+            });
+        }
+
+        setPoint(x, y, val) {
+            this.stage[y * this.side + (x % this.side)] = val;
+        }
+
+        getCoors(idx) {
+            return {
+                x: idx % this.side,
+                y: fl(idx / this.side),
+            }
+        }
+    }
+
     /**
      * @type {CanvasRenderingContext2D | WebGLRenderingContext}
      */
@@ -139,6 +401,7 @@
     const ctxConsole = createCrx(CONSOLE.width, CONSOLE.height);
     const ctxLogo = createCrx(SEC_AREA.width, SEC_AREA.height);
     const ctxKeyboard = createCrx(KEYBOARD.width, KEYBOARD.height);
+    const ctxStage = createCrx(SEC_AREA.width, SEC_AREA.height);
 
     const imageSpace = document.querySelector('#sourceSpace');
     const imageAbout = document.querySelector('#sourceAbout');
@@ -262,6 +525,9 @@
         stage: 'GAME',
     };
 
+    let stageCellSize;
+    let stage;
+
     const ownCode = await fetch(appScriptUrl)
         .then(x => x.text())
         .then(source => {
@@ -310,8 +576,13 @@
 
 
     function init() {
-        updateCache();
+        stageCellSize = 4;
+        stage = new Grid(stageCellSize);
+        stage.generateStage();
 
+        console.log(...stage.printStage());
+
+        updateCache();
         requestAnimationFrame(loop);
     }
 
@@ -499,7 +770,7 @@
         ctxSec.fillStyle = COLOR.bg;
         ctxSec.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
 
-        if (true || gameState.stage === 'INTRO') { // @todo remove
+        if (gameState.stage === 'INTRO') { // @todo remove
             drawLogo(timestamp);
         }
 
@@ -517,6 +788,8 @@
             drawConsole(timestamp);
 
             drawTransmission(timestamp);
+
+            drawStage(timestamp);
 
         }
 
@@ -709,8 +982,6 @@
 
     function drawLogo(timestamp) {
         ctxSec.save();
-        ctxSec.rect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
-        ctxSec.clip();
         // draw console grid
         const gridSize = 750;
         const gridCellSize = 50;
@@ -796,6 +1067,11 @@
         ctxMain.restore();
     }
 
+    function drawStage(timestamp) {
+        ctxSec.drawImage(ctxStage.canvas, 0, 0);
+    }
+
+
     function drawScanlines(timestamp) {
         const scanlineHeight = 5;
         const offset = fl(timestamp / 40) % (scanlineHeight * 2);
@@ -821,6 +1097,7 @@
         prerenderLogo();
         prerenderKeyboard();
         prerenderKeyboardSeparator();
+        prerenderStage();
     }
 
     function prerenderLogo() {
@@ -912,289 +1189,25 @@
         `);
     }
 
-    class Grid {
-        constructor(stageCellSize) {
-            this.side = 3 + 4 * stageCellSize;
-            this.generateStage();
-        }
+    function prerenderStage() {
+        ctxStage.save();
+        const rawData = chunk(stage.data, stage.side);
 
-        generateStage() {
-            const squareSize = this.side ** 2;
-            const preStage = new Array(squareSize).fill('#');
+        const gridCellSize = 25;
+        const gridSize = stage.side * gridCellSize;
 
-            for (const idx in preStage) {
-                if (!this.isStageObstacle(+idx)) {
-                    preStage[idx] = '.';
-                }
-            }
-            for (const idx in preStage) {
-                if (this.isStageBoundary(+idx)) {
-                    preStage[idx] = 'X';
-                }
-            }
-
-            const quarters = [
-                {
-                    xs: 0, xe: fl(this.side / 2),
-                    ys: 0, ye: fl(this.side / 2),
-                },
-                {
-                    xs: fl(this.side / 2) + 1, xe: this.side,
-                    ys: 0, ye: fl(this.side / 2),
-                },
-                {
-                    xs: 0, xe: fl(this.side / 2),
-                    ys: fl(this.side / 2) + 1, ye: this.side,
-                },
-                {
-                    xs: fl(this.side / 2) + 1, xe: this.side,
-                    ys: fl(this.side / 2) + 1, ye: this.side,
-                },
-            ];
-
-            console.log(`this.stageSize`, this.side);
-            const startQuarterIdx = randOf([0,1,2,3]);
-
-            console.log(`startQuarterIdx`, startQuarterIdx, 3 - startQuarterIdx);
-
-            const startPoint = {};
-            if (rnd() > 0.5) {
-                startPoint.x = Math.max(0, quarters[startQuarterIdx].xs - 1) * 2;
-                startPoint.y = randBetween(quarters[startQuarterIdx].ys + 1, quarters[startQuarterIdx].ye - 1);
-            } else {
-                startPoint.x = randBetween(quarters[startQuarterIdx].xs + 1, quarters[startQuarterIdx].xe - 1);
-                startPoint.y = Math.max(0, quarters[startQuarterIdx].ys - 1) * 2;
-            }
-
-            console.log(`Math.max(0, quarters[startQuarterIdx].ys - 1) * 2`, quarters[startQuarterIdx].ys, Math.max(0, quarters[startQuarterIdx].ys - 1) * 2);
-
-            const endPoint = {
-                x: randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1),
-                y: randBetween(quarters[3 - startQuarterIdx].ys + 1, quarters[3 - startQuarterIdx].ye - 1),
-            };
-
-            console.log(`startPoint`, startPoint, endPoint);
-
-            this.stage = preStage;
-
-            for (let i = 0; i < (this.side ** 2 ) / 6; i++) {
-                this.setPoint(
-                    randBetween(0, this.side),
-                    randBetween(0, this.side),
-                    '#'
-                );
-            }
-
-            let stepIdx = 1;
-            let paCollLast = [];
-            let paColl = [startPoint];
-
-            while (paColl.length > 0) {
-                paCollLast = paColl.slice();
-                paColl = [];
-                for (const pa of paCollLast) {
-                    const paInner = this.getPointsAround(pa.x, pa.y)
-                        .filter((p) => p.val === '.');
-                    paColl.push(...paInner);
-                }
-
-                paColl = Object.values(paColl.reduce((acc, p) => {
-                    acc[`${p.x}_${p.y}`] = p;
-                    return acc;
-                }, {}));
-
-                paColl.forEach((p) => this.setPoint(p.x, p.y, stepIdx));
-                stepIdx++;
-            }
-
-            this.setPoint(startPoint.x, startPoint.y, 's');
-            this.setPoint(endPoint.x, endPoint.y, 'e');
-
-            let paEnd = endPoint;
-            let paEndList = [];
-            do {
-                paEndList = this.getPointsAround(paEnd.x, paEnd.y)
-                    .filter((p) => `${p.val}`.match(/(\d|s)/));
-
-                if (paEndList.length) {
-                    paEnd = this.getLowest([paEnd, ...paEndList]);
-                    this.setPoint(paEnd.x, paEnd.y, 'e');
-                }
-            } while (paEndList.length > 0);
-
-            for (const idx in this.stage) {
-                if (this.stage[idx] === '.') {
-                    this.stage[idx] = '#';
+        for (let y = 0; y < stage.side; y++) {
+            for (let x = 0; x < stage.side; x++) {
+                if (['#', 'X', '+'].includes(rawData[y][x])){
+                    ctxStage.fillStyle = '#b000a3';
+                    ctxStage.fillRect(x * gridCellSize, y*gridCellSize, gridCellSize, gridCellSize)
+                } else if(rawData[y][x] === 'e') {
+                    ctxStage.fillStyle = '#fff';
+                    ctxStage.fillRect(x * gridCellSize, y*gridCellSize, gridCellSize, gridCellSize)
                 }
             }
         }
-
-        getPointsDist(point1, point2) {
-            const {x: x1, y: y1} = this.getCoors(point1);
-            const {x: x2, y: y2} = this.getCoors(point2);
-
-            return Math.hypot(x1 - x2, y1 - y2);
-        }
-
-        printStage() {
-            const rawData = chunk(this.stage, this.stage.length ** 0.5)
-                .map(x => {
-                    return x.map(val => {
-                        return `${val}`.replace(/\d+/, (str) => {
-                            return (+str) % 10;
-                        });
-                    }).join(' ');
-                })
-                .join('\n');
-
-            const formatedData = [];
-            const styleData = [];
-
-            const maxVal = this.stage.reduce((acc, n) => {
-                if (Number.isNaN(+n)) {
-                    return acc;
-                }
-                return acc < n ? n : acc;
-            }, 0);
-
-            console.log(`maxVal`, maxVal);
-
-            for (const charIdx in rawData) {
-                formatedData[charIdx] = rawData[charIdx];
-                if (rawData[charIdx] === '.') {
-                    formatedData[charIdx] = '%c.';
-                    styleData.push('color: purple');
-                } else if (rawData[charIdx] === 'X') {
-                    formatedData[charIdx] = '%cX';
-                    styleData.push('color: red');
-                } else if (rawData[charIdx] === '#') {
-                    formatedData[charIdx] = '%c#';
-                    styleData.push('color: red');
-                } else if (rawData[charIdx] === 's') {
-                    formatedData[charIdx] = '%cs';
-                    styleData.push('color: white');
-                } else if (rawData[charIdx] === 'e') {
-                    formatedData[charIdx] = '%ce';
-                    styleData.push('color: white');
-                } else if (rawData[charIdx] === 'm') {
-                    formatedData[charIdx] = '%cm';
-                    styleData.push('color: white');
-                } else if (rawData[charIdx].match(/\d/)) {
-                    formatedData[charIdx] = '%c' + rawData[charIdx];
-                    styleData.push(`color: rgb(0, ${this.stage[fl(charIdx/2)] * (255 / maxVal)}, 0)`);
-                }
-            }
-
-            return [formatedData.join(''), ...styleData];
-        }
-
-        isStageObstacle(idx) {
-            const {x, y} = this.getCoors(idx);
-
-            return !((
-                y % 2 === 1 // odd row without first and last col
-                && x !== 0
-                && x !== this.side - 1
-            ) || (
-                x % 2 === 1 // odd col without first and last row
-                && y !== 0
-                && y !== this.side - 1
-            ));
-        }
-
-        isStageBoundary(idx) {
-            const {x, y} = this.getCoors(idx);
-
-            return (
-                (
-                    x === 0
-                    || x === this.side - 1
-                    || y === 0
-                    || y === this.side - 1
-
-                ) && !(
-                    (x === 0 && y === 0)
-                    || (x === this.side - 1 && y === 0)
-                    || (x === 0 && y === this.side - 1)
-                    || (x === this.side - 1 && y === this.side - 1)
-                )
-            );
-        }
-
-
-        getPoint(x, y) {
-            return this.stage[y * this.side + x % this.side];
-        }
-
-        getPointNoWrap(x, y) {
-            if (x >= this.side || y >= this.side || x < 0 || y < 0) {
-                return null;
-            }
-            return this.stage[y * this.side + x % this.side];
-        }
-
-        getPointsAround(x, y) {
-            const points = [
-                {x: x, y: y - 1},
-                {x: x - 1, y: y},
-                {x: x + 1, y: y},
-                {x: x, y: y + 1},
-            ];
-
-            return points
-                .map((point) => {
-                    return {
-                        ...point,
-                        val: this.getPointNoWrap(point.x, point.y),
-                    }
-                })
-                .filter((point) => {
-                    return !!point.val;
-                });
-        }
-
-        getLowest(points) {
-            return points.reduce((acc, n) => {
-                if (acc.val === 's') {
-                    return acc;
-                }
-                if (n.val === 's') {
-                    return n;
-                }
-                return acc.val < n.val ? acc : n;
-            });
-        }
-
-        setPoint(x, y, val) {
-            this.stage[y * this.side + (x % this.side)] = val;
-        }
-
-        getCoors(idx) {
-            return {
-                x: idx % this.side,
-                y: fl(idx / this.side),
-            }
-        }
-
-        getLineFunc(x1, y1, x2, y2) {
-            const a = (y2 - y1) / (x2 - x1);
-            const b = (y1 * x2 - y2 * x1) / (x2 - x1);
-
-            return (x) => Math.round(a * x + b);
-        }
-
-        checkPass(stage, startPoint, endPoint) {
-
-        }
+        ctxStage.restore();
     }
 
-    const stageCellSize = 6;
-    const stage = new Grid(stageCellSize);
-
-
-
-    console.log(...stage.printStage());
-
 })();
-
-
