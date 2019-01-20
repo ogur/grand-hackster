@@ -177,22 +177,22 @@
 
             const startQuarterIdx = randOf([0, 1, 2, 3]);
 
-            const startPoint = {};
+            this.startPoint = {};
             if (rnd() > 0.5) {
-                startPoint.x = Math.max(0, quarters[startQuarterIdx].xs - 1) * 2;
-                startPoint.y = randBetween(quarters[startQuarterIdx].ys + 1, quarters[startQuarterIdx].ye - 1);
+                this.startPoint.x = Math.max(0, quarters[startQuarterIdx].xs - 1) * 2;
+                this.startPoint.y = randBetween(quarters[startQuarterIdx].ys + 1, quarters[startQuarterIdx].ye - 1);
             } else {
-                startPoint.x = randBetween(quarters[startQuarterIdx].xs + 1, quarters[startQuarterIdx].xe - 1);
-                startPoint.y = Math.max(0, quarters[startQuarterIdx].ys - 1) * 2;
+                this.startPoint.x = randBetween(quarters[startQuarterIdx].xs + 1, quarters[startQuarterIdx].xe - 1);
+                this.startPoint.y = Math.max(0, quarters[startQuarterIdx].ys - 1) * 2;
             }
 
-            let endPoint = {};
-            while (endPoint.type !== '.') {
+            this.endPoint = {};
+            while (this.endPoint.type !== '.') {
                 const x = randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1);
                 const y = randBetween(quarters[3 - startQuarterIdx].ys + 1, quarters[3 - startQuarterIdx].ye - 1);
 
                 if (this.stage[y][x].type === '.'){
-                    endPoint = this.stage[y][x];
+                    this.endPoint = this.stage[y][x];
                 }
             }
 
@@ -202,7 +202,7 @@
 
             let stepIdx = 1;
             let pointsAroundPrev = [];
-            let pointsAroundList = [startPoint];
+            let pointsAroundList = [this.startPoint];
 
             while (pointsAroundList.length > 0) {
                 pointsAroundPrev = pointsAroundList.slice();
@@ -224,20 +224,20 @@
                 stepIdx++;
             }
 
-            if (this.stage[endPoint.y][endPoint.x].dist === null) {
+            if (this.stage[this.endPoint.y][this.endPoint.x].dist === null) {
                 console.info('stage was unsolvable');
                 return this.generateStage();
             }
 
-            this.stage[startPoint.y][startPoint.x] = {
+            this.stage[this.startPoint.y][this.startPoint.x] = {
                 type: '.',
                 dist: 0,
-                x: startPoint.x,
-                y: startPoint.y,
+                x: this.startPoint.x,
+                y: this.startPoint.y,
             };
-            this.stage[endPoint.y][endPoint.x].type = 'e';
+            this.stage[this.endPoint.y][this.endPoint.x].type = 'e';
 
-            let prevLowestPoint = endPoint;
+            let prevLowestPoint = this.endPoint;
             let pointsAroundEndList = [];
             do {
                 pointsAroundEndList = this.getPointsAround(prevLowestPoint.x, prevLowestPoint.y)
@@ -335,6 +335,10 @@
      * @type {CanvasRenderingContext2D | WebGLRenderingContext}
      */
     const ctxStage = createCrx(SEC_AREA.width, SEC_AREA.height);
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
+    const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
 
     const imageSpace = document.querySelector('#sourceSpace');
     const imageAbout = document.querySelector('#sourceAbout');
@@ -369,49 +373,91 @@
             gameState.stage = 'INTRO';
         }
 
-        if (event.key === ' ') {
-            isSwitchingEnabled = true;
-            if (event.ctrlKey || event.shiftKey) {
-                selectedArea.row = null;
-                selectedArea.col = null;
-            }
-            return;
-        }
-
-        if (event.repeat) {
-            return;
-        }
-        const keyName = event.key.toLowerCase();
-        const key = keys[keyName];
-
-        if (key && isSwitchingEnabled) {
-            selectedArea.col = key.groupCol;
-            selectedArea.row = key.groupRow;
-            return;
-        }
-
-        if (key && !key.isDestroyed) {
-            key.isPushed = true;
-            clearKey(key);
-            drawKey(key);
-
-            key.heat = Math.min(key.heat + 1, HEAT.max);
-            if (key.heat === HEAT.max) {
-                key.isDestroyed = true;
+        if (gameState.stage === 'GAME') {
+            if (event.key.toLowerCase() === 'arrowdown') {
+                const newY = player.y + 1;
+                if (newY < grid.side && grid.stage[newY][player.x].type !== '#') {
+                    player.y = newY;
+                    grid.stage[newY][player.x].visited = true;
+                    prerenderStage();
+                }
+                return;
             }
 
-            const targetRow = selectedArea.row !== null ? selectedArea.row : key.groupRow;
-            const targetCol = selectedArea.col !== null ? selectedArea.col : key.groupCol;
+            if (event.key.toLowerCase() === 'arrowup') {
+                const newY = player.y - 1;
+                if (newY >= 0 && grid.stage[newY][player.x].type !== '#') {
+                    player.y = newY;
+                    grid.stage[newY][player.x].visited = true;
+                    prerenderStage();
+                }
+                return;
+            }
 
-            for (let cellIdx = 0; cellIdx < CONSOLE.areaLimit; cellIdx++) {
-                const targetCellRow = targetRow * CONSOLE.lineRows3 + fl(cellIdx / CONSOLE.lineCols3);
-                const targetCellColOffset = targetCol * CONSOLE.lineCols3;
-                const targetCellIdx = targetCellRow * CONSOLE.lineCols + targetCellColOffset + cellIdx % CONSOLE.lineCols3;
+            if (event.key.toLowerCase() === 'arrowright') {
+                const newX = player.x + 1;
+                if (newX < grid.side && grid.stage[player.y][newX].type !== '#') {
+                    player.x = newX;
+                    grid.stage[player.y][newX].visited = true;
+                    prerenderStage();
+                }
+                return;
+            }
 
-                if (!consoleArea[targetCellIdx] || consoleArea[targetCellIdx].race !== 'HUMAN') {
-                    consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx]};
-                    writeHumanAction(targetCellIdx);
-                    break;
+            if (event.key.toLowerCase() === 'arrowleft') {
+                const newX = player.x - 1;
+                if (newX >= 0 && grid.stage[player.y][newX].type !== '#') {
+                    player.x = newX;
+                    grid.stage[player.y][newX].visited = true;
+                    prerenderStage();
+                }
+                return;
+            }
+
+            if (event.key === ' ') {
+                isSwitchingEnabled = true;
+                if (event.ctrlKey || event.shiftKey) {
+                    selectedArea.row = null;
+                    selectedArea.col = null;
+                }
+                return;
+            }
+
+            if (event.repeat) {
+                return;
+            }
+            const keyName = event.key.toLowerCase();
+            const key = keys[keyName];
+
+            if (key && isSwitchingEnabled) {
+                selectedArea.col = key.groupCol;
+                selectedArea.row = key.groupRow;
+                return;
+            }
+
+            if (key && !key.isDestroyed) {
+                key.isPushed = true;
+                clearKey(key);
+                drawKey(key);
+
+                key.heat = Math.min(key.heat + 1, HEAT.max);
+                if (key.heat === HEAT.max) {
+                    key.isDestroyed = true;
+                }
+
+                const targetRow = selectedArea.row !== null ? selectedArea.row : key.groupRow;
+                const targetCol = selectedArea.col !== null ? selectedArea.col : key.groupCol;
+
+                for (let cellIdx = 0; cellIdx < CONSOLE.areaLimit; cellIdx++) {
+                    const targetCellRow = targetRow * CONSOLE.lineRows3 + fl(cellIdx / CONSOLE.lineCols3);
+                    const targetCellColOffset = targetCol * CONSOLE.lineCols3;
+                    const targetCellIdx = targetCellRow * CONSOLE.lineCols + targetCellColOffset + cellIdx % CONSOLE.lineCols3;
+
+                    if (!consoleArea[targetCellIdx] || consoleArea[targetCellIdx].race !== 'HUMAN') {
+                        consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx]};
+                        writeHumanAction(targetCellIdx);
+                        break;
+                    }
                 }
             }
         }
@@ -456,6 +502,11 @@
     };
     const gameState = {
         stage: 'GAME',
+    };
+
+    const player = {
+        x: 0,
+        y: 0,
     };
 
     let stageCellSize;
@@ -512,6 +563,10 @@
         stageCellSize = 4 ;
         grid = new Grid(stageCellSize);
         grid.generateStage();
+
+        player.x = grid.startPoint.x;
+        player.y = grid.startPoint.y;
+        grid.stage[grid.startPoint.y][grid.startPoint.x].visited = true;
 
         console.log(`stage`, grid.stage);
 
@@ -1001,7 +1056,42 @@
     }
 
     function drawStage(timestamp) {
-        ctxSec.drawImage(ctxStage.canvas, 0, 0);
+        const gridCellSize = 24;
+
+        ctxSec.save();
+        const p = new Path2D(`
+            M10 -60 
+            h50 v10 h150 v-10 h400 v20 h30 v-20 h70 v55 
+            h-700 v55 
+            h50 v10 h150 v-10 h420 v20 h30 v-20 h50 v55 
+            h-700 v55 
+            h50 v10 h150 v-10 h400 v-20 h30 v20 h70 v55 
+            h-700 v55
+            h50 v10 h150 v-10 h400 v20 h50 v-40 h50 v75 
+            h-700 v55
+            h50 v10 h150 v-10 h400 v-20 h30 v20 h70 v55 
+            h-700 v55
+        `);
+
+        ctxSec.strokeStyle = '#0f7aff';
+        ctxSec.lineWidth = 1;
+        ctxSec.stroke(p);
+
+        ctxSec.strokeStyle = '#d7eaff';
+        ctxSec.lineWidth = 5;
+        ctxSec.globalCompositeOperation = 'overlay';
+        ctxSec.setLineDash([5, 3 * gridCellSize, 5, 5 * gridCellSize, 5, gridCellSize]);
+        ctxSec.lineDashOffset = (timestamp / 8) % (8 * gridCellSize + 15);
+        ctxSec.stroke(p);
+        ctxSec.restore();
+
+        ctxSec.drawImage(ctxStage.canvas,
+            0, 0,
+            grid.side * gridCellSize, grid.side * gridCellSize,
+            (SEC_AREA.width - grid.side * gridCellSize) * 0.5,
+            (SEC_AREA.height - grid.side * gridCellSize) * 0.5,
+            grid.side * gridCellSize, grid.side * gridCellSize
+        );
     }
 
 
@@ -1030,6 +1120,7 @@
         prerenderLogo();
         prerenderKeyboard();
         prerenderKeyboardSeparator();
+        prerenderDarkness();
         prerenderStage();
     }
 
@@ -1122,29 +1213,47 @@
         `);
     }
 
+    function prerenderDarkness() {
+        const gridCellSize = 24;
+        ctxDarkness.fillStyle = COLOR.bg;
+        ctxDarkness.fillRect(0,0, SEC_AREA.width, SEC_AREA.height);
+        if (settings.isHq){
+            ctxDarkness.shadowBlur = 1;
+        }
+        ctxDarkness.shadowColor = '#340034';
+
+        for (let y = 0; y < grid.side * 2; y++) {
+            for (let x = 0; x < grid.side * 2; x++) {
+                ctxDarkness.strokeStyle = '#620062';
+                ctxDarkness.strokeRect(
+                    randBetween(0, grid.side *2) * gridCellSize * 0.5,
+                    randBetween(0, grid.side*2) * gridCellSize * 0.5,
+                    gridCellSize*0.5,
+                    gridCellSize*0.5
+                );
+            }
+        }
+    }
+
     function prerenderStage() {
         ctxStage.save();
         const rawData = grid.stage;
 
         const gridCellSize = 24;
 
-        ctxStage.lineWidth = 1;
+        ctxStage.fillStyle = '#001021';
+        ctxStage.fillRect(0, 0, SEC_AREA.width, SEC_AREA.height);
 
+        ctxStage.lineWidth = 1;
+        if (settings.isHq) {
+            ctxStage.shadowBlur = 3;
+        }
+        ctxStage.shadowColor = '#c200b4';
         for (let y = 0; y < grid.side; y++) {
             for (let x = 0; x < grid.side; x++) {
                 if (rawData[y][x].type === '#') {
                     drawWall(x, y, gridCellSize, '#c200b4', '#620056');
-                } else if(rawData[y][x].type === '.' && rawData[y][x].dist > 0) {
-                    ctxStage.fillStyle = '#0f0';
-                    ctxStage.font = '20px monospace';
-                    ctxStage.textAlign = 'center';
-                    ctxStage.fillText(rawData[y][x].dist, (x + 0.5) * gridCellSize, (y +1) * gridCellSize);
                 }
-
-                ctxStage.fillStyle = '#0f0';
-                ctxStage.font = '8px monospace';
-                ctxStage.textAlign = 'left';
-                ctxStage.fillText(`${x},${y}`, x * gridCellSize, (y + 1) * gridCellSize);
             }
         }
 
@@ -1152,27 +1261,33 @@
         for (let y = 0; y < grid.side; y++) {
             for (let x = 0; x < grid.side; x++) {
                 if (rawData[y][x].type === 'e') {
-                    ctxStage.fillStyle = '#0cff3455';
-                    ctxStage.fillRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize)
+                    ctxStage.strokeStyle = '#0cff34';
+                    ctxStage.strokeRect((x + 0.425) * gridCellSize, (y + 0.425) * gridCellSize, gridCellSize * 0.15, gridCellSize * 0.15)
                 }
             }
         }
 
-        const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
-        ctxDarkness.fillStyle = '#000';
-        ctxDarkness.fillRect(0,0, SEC_AREA.width, SEC_AREA.height);
+        ctxStage.shadowColor = '#0ca8df';
+        ctxStage.fillRect((player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
 
-        // ctxStage.globalCompositeOperation = 'source-atop';
+        ctxStage.drawImage(imageSpace, (player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
+
         for (let y = 0; y < grid.side; y++) {
             for (let x = 0; x < grid.side; x++) {
-                if (rawData[y][x].type === 'e') {
-                    ctxDarkness.clearRect((x-1) * gridCellSize, (y-1) * gridCellSize, 3*gridCellSize, 3*gridCellSize)
+                if (rawData[y][x].visited) {
+                    ctxDarkness.clearRect((x-1) * gridCellSize, (y-2) * gridCellSize, 3*gridCellSize, 5*gridCellSize);
+                    ctxDarkness.clearRect((x-2) * gridCellSize, (y-1) * gridCellSize, 5*gridCellSize, 3*gridCellSize);
+                    ctxDarkness.clearRect((x-1.5) * gridCellSize, (y-1.5) * gridCellSize, 4*gridCellSize, 4*gridCellSize);
                 }
             }
         }
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+
         ctxStage.fillStyle = '#000';
         ctxStage.shadowColor = '#000';
-        ctxStage.shadowBlur = 10;
+        if (settings.isHq) {
+            ctxStage.shadowBlur = 10;
+        }
         ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
         ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
         ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
@@ -1181,10 +1296,10 @@
         ctxStage.restore();
     }
 
-    function drawWall(x, y, gridCellSize, wallStyle, ceilingStyle) {
-        ctxStage.fillStyle = ceilingStyle;
+    function drawWall(x, y, gridCellSize, strokeStyle, fillStyle) {
+        ctxStage.fillStyle = fillStyle;
         ctxStage.fillRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize)
-        ctxStage.strokeStyle = wallStyle;
+        ctxStage.strokeStyle = strokeStyle;
         ctxStage.strokeRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize);
     }
 
