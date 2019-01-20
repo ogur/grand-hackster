@@ -42,8 +42,6 @@
     CONSOLE.lineCols3 = CONSOLE.lineCols / 3;
     CONSOLE.lineRows3 = CONSOLE.lineRows / 3;
 
-    console.log(`CONSOLE`, CONSOLE);
-
     const TRANSMISSION = {
         top: 10,
         left: MAIN_AREA.width - 284,
@@ -135,22 +133,26 @@
             this.side = 3 + 4 * stageCellSize;
         }
 
-        get data() {
-            return this.stage;
-        }
-
         generateStage() {
-            const squareSize = this.side ** 2;
-            const preStage = new Array(squareSize).fill('#');
+            this.stage = [];
 
-            for (const idx in preStage) {
-                if (!this.isStageObstacle(+idx)) {
-                    preStage[idx] = '.';
+            for (let y = 0; y < this.side; y++) {
+                this.stage[y] = [];
+                for (let x = 0; x < this.side; x++) {
+                    this.stage[y][x] = {
+                        type: '#',
+                        dist: null,
+                        x,
+                        y,
+                    };
                 }
             }
-            for (const idx in preStage) {
-                if (this.isStageBoundary(+idx)) {
-                    preStage[idx] = 'X';
+
+            for (let y = 0; y < this.side; y++) {
+                for (let x = 0; x < this.side; x++) {
+                    if (!this.isStageObstacle(x, y)) {
+                        this.stage[y][x].type = '.';
+                    }
                 }
             }
 
@@ -173,7 +175,7 @@
                 },
             ];
 
-            const startQuarterIdx = randOf([0,1,2,3]);
+            const startQuarterIdx = randOf([0, 1, 2, 3]);
 
             const startPoint = {};
             if (rnd() > 0.5) {
@@ -184,168 +186,99 @@
                 startPoint.y = Math.max(0, quarters[startQuarterIdx].ys - 1) * 2;
             }
 
-            const endPoint = {
-                x: randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1),
-                y: randBetween(quarters[3 - startQuarterIdx].ys + 1, quarters[3 - startQuarterIdx].ye - 1),
-            };
+            let endPoint = {};
+            while (endPoint.type !== '.') {
+                const x = randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1);
+                const y = randBetween(quarters[3 - startQuarterIdx].ys + 1, quarters[3 - startQuarterIdx].ye - 1);
 
-            this.stage = preStage;
+                if (this.stage[y][x].type === '.'){
+                    endPoint = this.stage[y][x];
+                }
+            }
 
-            for (let i = 0; i < (this.side ** 2 ) / 4; i++) {
-                this.setPoint(
-                    randBetween(0, this.side),
-                    randBetween(0, this.side),
-                    '#'
-                );
+            for (let i = 0; i < (this.side ** 2) / 4; i++) {
+                this.stage[randBetween(0, this.side)][randBetween(0, this.side)].type = '#';
             }
 
             let stepIdx = 1;
-            let paCollLast = [];
-            let paColl = [startPoint];
+            let pointsAroundPrev = [];
+            let pointsAroundList = [startPoint];
 
-            while (paColl.length > 0) {
-                paCollLast = paColl.slice();
-                paColl = [];
-                for (const pa of paCollLast) {
-                    const paInner = this.getPointsAround(pa.x, pa.y)
-                        .filter((p) => p.val === '.');
-                    paColl.push(...paInner);
+            while (pointsAroundList.length > 0) {
+                pointsAroundPrev = pointsAroundList.slice();
+                pointsAroundList = [];
+                for (const prevPoint of pointsAroundPrev) {
+                    const newPointsAround = this.getPointsAround(prevPoint.x, prevPoint.y)
+                        .filter((point) => point.type === '.'  && !point.dist);
+                    pointsAroundList.push(...newPointsAround);
                 }
 
-                paColl = Object.values(paColl.reduce((acc, p) => {
-                    acc[`${p.x}_${p.y}`] = p;
+                pointsAroundList = Object.values(pointsAroundList.reduce((acc, point) => {
+                    acc[`${point.x}_${point.y}`] = point;
                     return acc;
                 }, {}));
 
-                paColl.forEach((p) => this.setPoint(p.x, p.y, stepIdx));
+                pointsAroundList.forEach((point) => {
+                    this.stage[point.y][point.x].dist = stepIdx
+                });
                 stepIdx++;
             }
 
-            if (['#', '.'].includes(this.getPoint(endPoint.x, endPoint.y))) {
-                console.log('stage was unsolvable');
+            if (this.stage[endPoint.y][endPoint.x].dist === null) {
+                console.info('stage was unsolvable');
                 return this.generateStage();
             }
 
-            this.setPoint(startPoint.x, startPoint.y, 's');
-            this.setPoint(endPoint.x, endPoint.y, 'e');
+            this.stage[startPoint.y][startPoint.x] = {
+                type: '.',
+                dist: 0,
+                x: startPoint.x,
+                y: startPoint.y,
+            };
+            this.stage[endPoint.y][endPoint.x].type = 'e';
 
-            let paEnd = endPoint;
-            let paEndList = [];
+            let prevLowestPoint = endPoint;
+            let pointsAroundEndList = [];
             do {
-                paEndList = this.getPointsAround(paEnd.x, paEnd.y)
-                    .filter((p) => `${p.val}`.match(/(\d|s)/));
+                pointsAroundEndList = this.getPointsAround(prevLowestPoint.x, prevLowestPoint.y)
+                    .filter((point) => {
+                        return point.type === '.' && point.dist !== null;
+                    });
 
-                if (paEndList.length) {
-                    paEnd = this.getLowest([paEnd, ...paEndList]);
-                    this.setPoint(paEnd.x, paEnd.y, 'e');
+                if (pointsAroundEndList.length) {
+                    prevLowestPoint = this.getLowest([prevLowestPoint, ...pointsAroundEndList]);
+                    this.stage[prevLowestPoint.y][prevLowestPoint.x].type = 'e';
                 }
-            } while (paEndList.length > 0);
+            } while (pointsAroundEndList.length > 0);
 
-            for (const idx in this.stage) {
-                if (this.stage[idx] === '.') {
-                    this.stage[idx] = '+';
+            for (let y = 0; y < this.side; y++) {
+                for (let x = 0; x < this.side; x++) {
+                    if (this.stage[y][x].type === '.' && this.stage[y][x].dist === null) {
+                        this.stage[y][x].type = '#';
+                    }
                 }
             }
         }
 
-        printStage() {
-            const rawData = chunk(this.stage, this.stage.length ** 0.5)
-                .map(x => {
-                    return x.map(val => {
-                        return `${val}`.replace(/\d+/, (str) => {
-                            return (+str) % 10;
-                        });
-                    }).join(' ');
-                })
-                .join('\n');
-
-            const formatedData = [];
-            const styleData = [];
-
-            const maxVal = this.stage.reduce((acc, n) => {
-                if (Number.isNaN(+n)) {
-                    return acc;
-                }
-                return acc < n ? n : acc;
-            }, 0);
-
-            console.log(`maxVal`, maxVal);
-
-            for (const charIdx in rawData) {
-                formatedData[charIdx] = rawData[charIdx];
-                if (rawData[charIdx] === '.') {
-                    formatedData[charIdx] = '%c.';
-                    styleData.push('color: purple');
-                } else if (rawData[charIdx] === 'X') {
-                    formatedData[charIdx] = '%cX';
-                    styleData.push('color: red');
-                } else if (rawData[charIdx] === '#') {
-                    formatedData[charIdx] = '%c#';
-                    styleData.push('color: red');
-                } else if (rawData[charIdx] === '+') {
-                    formatedData[charIdx] = '%c#';
-                    styleData.push('color: darkred');
-                } else if (rawData[charIdx] === 's') {
-                    formatedData[charIdx] = '%cs';
-                    styleData.push('color: white');
-                } else if (rawData[charIdx] === 'e') {
-                    formatedData[charIdx] = '%ce';
-                    styleData.push('color: white');
-                } else if (rawData[charIdx] === 'm') {
-                    formatedData[charIdx] = '%cm';
-                    styleData.push('color: white');
-                } else if (rawData[charIdx].match(/\d/)) {
-                    formatedData[charIdx] = '%c' + rawData[charIdx];
-                    styleData.push(`color: rgb(0, ${this.stage[fl(charIdx/2)] * (255 / maxVal)}, 0)`);
-                }
-            }
-
-            return [formatedData.join(''), ...styleData];
-        }
-
-        isStageObstacle(idx) {
-            const {x, y} = this.getCoors(idx);
-
-            return !((
+        isStageObstacle(x, y) {
+            return !(
+                (
                 y % 2 === 1 // odd row without first and last col
                 && x !== 0
                 && x !== this.side - 1
-            ) || (
+            ) ||
+                (
                 x % 2 === 1 // odd col without first and last row
                 && y !== 0
                 && y !== this.side - 1
             ));
         }
 
-        isStageBoundary(idx) {
-            const {x, y} = this.getCoors(idx);
-
-            return (
-                (
-                    x === 0
-                    || x === this.side - 1
-                    || y === 0
-                    || y === this.side - 1
-
-                ) && !(
-                    (x === 0 && y === 0)
-                    || (x === this.side - 1 && y === 0)
-                    || (x === 0 && y === this.side - 1)
-                    || (x === this.side - 1 && y === this.side - 1)
-                )
-            );
-        }
-
-
-        getPoint(x, y) {
-            return this.stage[y * this.side + x % this.side];
-        }
-
         getPointNoWrap(x, y) {
             if (x >= this.side || y >= this.side || x < 0 || y < 0) {
                 return null;
             }
-            return this.stage[y * this.side + x % this.side];
+            return this.stage[y][x];
         }
 
         getPointsAround(x, y) {
@@ -358,37 +291,23 @@
 
             return points
                 .map((point) => {
-                    return {
-                        ...point,
-                        val: this.getPointNoWrap(point.x, point.y),
-                    }
+                    return this.getPointNoWrap(point.x, point.y)
                 })
                 .filter((point) => {
-                    return !!point.val;
+                    return !!point;
                 });
         }
 
         getLowest(points) {
             return points.reduce((acc, n) => {
-                if (acc.val === 's') {
+                if (acc.type === 's') {
                     return acc;
                 }
-                if (n.val === 's') {
+                if (n.type === 's') {
                     return n;
                 }
-                return acc.val < n.val ? acc : n;
+                return acc.dist < n.dist ? acc : n;
             });
-        }
-
-        setPoint(x, y, val) {
-            this.stage[y * this.side + (x % this.side)] = val;
-        }
-
-        getCoors(idx) {
-            return {
-                x: idx % this.side,
-                y: fl(idx / this.side),
-            }
         }
     }
 
@@ -396,11 +315,25 @@
      * @type {CanvasRenderingContext2D | WebGLRenderingContext}
      */
     const ctxMain = document.querySelector('#mainArea').getContext('2d');
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
     const ctxSec = document.querySelector('#secArea').getContext('2d');
-
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
     const ctxConsole = createCrx(CONSOLE.width, CONSOLE.height);
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
     const ctxLogo = createCrx(SEC_AREA.width, SEC_AREA.height);
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
     const ctxKeyboard = createCrx(KEYBOARD.width, KEYBOARD.height);
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
     const ctxStage = createCrx(SEC_AREA.width, SEC_AREA.height);
 
     const imageSpace = document.querySelector('#sourceSpace');
@@ -526,7 +459,7 @@
     };
 
     let stageCellSize;
-    let stage;
+    let grid;
 
     const ownCode = await fetch(appScriptUrl)
         .then(x => x.text())
@@ -576,11 +509,11 @@
 
 
     function init() {
-        stageCellSize = 4;
-        stage = new Grid(stageCellSize);
-        stage.generateStage();
+        stageCellSize = 4 ;
+        grid = new Grid(stageCellSize);
+        grid.generateStage();
 
-        console.log(...stage.printStage());
+        console.log(`stage`, grid.stage);
 
         updateCache();
         requestAnimationFrame(loop);
@@ -1191,23 +1124,68 @@
 
     function prerenderStage() {
         ctxStage.save();
-        const rawData = chunk(stage.data, stage.side);
+        const rawData = grid.stage;
 
-        const gridCellSize = 25;
-        const gridSize = stage.side * gridCellSize;
+        const gridCellSize = 24;
 
-        for (let y = 0; y < stage.side; y++) {
-            for (let x = 0; x < stage.side; x++) {
-                if (['#', 'X', '+'].includes(rawData[y][x])){
-                    ctxStage.fillStyle = '#b000a3';
-                    ctxStage.fillRect(x * gridCellSize, y*gridCellSize, gridCellSize, gridCellSize)
-                } else if(rawData[y][x] === 'e') {
-                    ctxStage.fillStyle = '#fff';
-                    ctxStage.fillRect(x * gridCellSize, y*gridCellSize, gridCellSize, gridCellSize)
+        ctxStage.lineWidth = 1;
+
+        for (let y = 0; y < grid.side; y++) {
+            for (let x = 0; x < grid.side; x++) {
+                if (rawData[y][x].type === '#') {
+                    drawWall(x, y, gridCellSize, '#c200b4', '#620056');
+                } else if(rawData[y][x].type === '.' && rawData[y][x].dist > 0) {
+                    ctxStage.fillStyle = '#0f0';
+                    ctxStage.font = '20px monospace';
+                    ctxStage.textAlign = 'center';
+                    ctxStage.fillText(rawData[y][x].dist, (x + 0.5) * gridCellSize, (y +1) * gridCellSize);
+                }
+
+                ctxStage.fillStyle = '#0f0';
+                ctxStage.font = '8px monospace';
+                ctxStage.textAlign = 'left';
+                ctxStage.fillText(`${x},${y}`, x * gridCellSize, (y + 1) * gridCellSize);
+            }
+        }
+
+
+        for (let y = 0; y < grid.side; y++) {
+            for (let x = 0; x < grid.side; x++) {
+                if (rawData[y][x].type === 'e') {
+                    ctxStage.fillStyle = '#0cff3455';
+                    ctxStage.fillRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize)
                 }
             }
         }
+
+        const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
+        ctxDarkness.fillStyle = '#000';
+        ctxDarkness.fillRect(0,0, SEC_AREA.width, SEC_AREA.height);
+
+        // ctxStage.globalCompositeOperation = 'source-atop';
+        for (let y = 0; y < grid.side; y++) {
+            for (let x = 0; x < grid.side; x++) {
+                if (rawData[y][x].type === 'e') {
+                    ctxDarkness.clearRect((x-1) * gridCellSize, (y-1) * gridCellSize, 3*gridCellSize, 3*gridCellSize)
+                }
+            }
+        }
+        ctxStage.fillStyle = '#000';
+        ctxStage.shadowColor = '#000';
+        ctxStage.shadowBlur = 10;
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+
         ctxStage.restore();
+    }
+
+    function drawWall(x, y, gridCellSize, wallStyle, ceilingStyle) {
+        ctxStage.fillStyle = ceilingStyle;
+        ctxStage.fillRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize)
+        ctxStage.strokeStyle = wallStyle;
+        ctxStage.strokeRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize);
     }
 
 })();
