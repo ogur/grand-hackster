@@ -191,7 +191,7 @@
                 const x = randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1);
                 const y = randBetween(quarters[3 - startQuarterIdx].ys + 1, quarters[3 - startQuarterIdx].ye - 1);
 
-                if (this.stage[y][x].type === '.'){
+                if (this.stage[y][x].type === '.') {
                     this.endPoint = this.stage[y][x];
                 }
             }
@@ -209,7 +209,7 @@
                 pointsAroundList = [];
                 for (const prevPoint of pointsAroundPrev) {
                     const newPointsAround = this.getPointsAround(prevPoint.x, prevPoint.y)
-                        .filter((point) => point.type === '.'  && !point.dist);
+                        .filter((point) => point.type === '.' && !point.dist);
                     pointsAroundList.push(...newPointsAround);
                 }
 
@@ -263,15 +263,15 @@
         isStageObstacle(x, y) {
             return !(
                 (
-                y % 2 === 1 // odd row without first and last col
-                && x !== 0
-                && x !== this.side - 1
-            ) ||
+                    y % 2 === 1 // odd row without first and last col
+                    && x !== 0
+                    && x !== this.side - 1
+                ) ||
                 (
-                x % 2 === 1 // odd col without first and last row
-                && y !== 0
-                && y !== this.side - 1
-            ));
+                    x % 2 === 1 // odd col without first and last row
+                    && y !== 0
+                    && y !== this.side - 1
+                ));
         }
 
         getPointNoWrap(x, y) {
@@ -560,7 +560,7 @@
 
 
     function init() {
-        stageCellSize = 4 ;
+        stageCellSize = 4;
         grid = new Grid(stageCellSize);
         grid.generateStage();
 
@@ -1059,38 +1059,50 @@
         const gridCellSize = 24;
 
         ctxSec.save();
-        const p = new Path2D(`
-            M10 -60 
-            h50 v10 h150 v-10 h400 v20 h30 v-20 h70 v55 
-            h-700 v55 
-            h50 v10 h150 v-10 h420 v20 h30 v-20 h50 v55 
-            h-700 v55 
-            h50 v10 h150 v-10 h400 v-20 h30 v20 h70 v55 
-            h-700 v55
-            h50 v10 h150 v-10 h400 v20 h50 v-40 h50 v75 
-            h-700 v55
-            h50 v10 h150 v-10 h400 v-20 h30 v20 h70 v55 
-            h-700 v55
-        `);
-
+        ctxSec.shadowColor = '#0f7aff';
+        if (settings.isHq) {
+            ctxSec.shadowBlur = 3;
+        }
         ctxSec.strokeStyle = '#0f7aff';
         ctxSec.lineWidth = 1;
-        ctxSec.stroke(p);
+        ctxSec.stroke(stageBgPath);
+
+        ctxSec.save();
+        ctxSec.translate(SEC_AREA.width, 0);
+        ctxSec.rotate(90 * Math.PI / 180);
+        ctxSec.stroke(stageBgPath);
+        ctxSec.restore();
 
         ctxSec.strokeStyle = '#d7eaff';
         ctxSec.lineWidth = 5;
         ctxSec.globalCompositeOperation = 'overlay';
-        ctxSec.setLineDash([5, 3 * gridCellSize, 5, 5 * gridCellSize, 5, gridCellSize]);
-        ctxSec.lineDashOffset = (timestamp / 8) % (8 * gridCellSize + 15);
-        ctxSec.stroke(p);
+        ctxSec.setLineDash([5, 30 * gridCellSize]);
+        ctxSec.lineDashOffset = (timestamp / 8) % (30 * gridCellSize + 5);
+        ctxSec.stroke(stageBgPath);
+        ctxSec.restore();
+
+        const stageSide = grid.side * gridCellSize;
+
+        ctxSec.save();
+        ctxSec.fillStyle = '#000';
+        ctxSec.shadowColor = '#da00bf';
+        if (settings.isHq) {
+            ctxSec.shadowBlur = 10;
+        }
+        ctxSec.fillRect(
+            (SEC_AREA.width - stageSide) * 0.5,
+            (SEC_AREA.height - stageSide) * 0.5,
+            stageSide,
+            stageSide
+        );
         ctxSec.restore();
 
         ctxSec.drawImage(ctxStage.canvas,
             0, 0,
-            grid.side * gridCellSize, grid.side * gridCellSize,
-            (SEC_AREA.width - grid.side * gridCellSize) * 0.5,
-            (SEC_AREA.height - grid.side * gridCellSize) * 0.5,
-            grid.side * gridCellSize, grid.side * gridCellSize
+            stageSide, stageSide,
+            (SEC_AREA.width - stageSide) * 0.5,
+            (SEC_AREA.height - stageSide) * 0.5,
+            stageSide, stageSide
         );
     }
 
@@ -1120,6 +1132,7 @@
         prerenderLogo();
         prerenderKeyboard();
         prerenderKeyboardSeparator();
+        prerenderStageLine();
         prerenderDarkness();
         prerenderStage();
     }
@@ -1196,6 +1209,7 @@
     }
 
     function prerenderKeyboard() {
+        ctxKeyboard.clearRect(0,0, KEYBOARD.width, KEYBOARD.height);
         for (const key of Object.values(keys)) {
             drawKey(key);
         }
@@ -1213,11 +1227,30 @@
         `);
     }
 
+    function prerenderStageLine() {
+        const gridSize = 16;
+        const gridCellSize = fl(SEC_AREA.height / gridSize) * 2;
+        const r = (n) => Array.from({length: n}, (e, i) => i);
+
+        const start = r(gridSize);
+
+        let path = 'M 0 0';
+
+        for (let i = 0; i < gridSize; i++) {
+            path += ` L 0 ${start[i] * gridCellSize + gridSize*1.75}`;
+            path += ` L ${SEC_AREA.width} ${start[i] * gridCellSize + gridSize*1.75}`;
+            path += ` L ${SEC_AREA.width} ${(start[i] + 0.5) * gridCellSize + gridSize*1.75}`;
+            path += ` L 0 ${(start[i] + 0.5) * gridCellSize + gridSize*1.75}`;
+        }
+
+        stageBgPath = new Path2D(path);
+    }
+
     function prerenderDarkness() {
         const gridCellSize = 24;
         ctxDarkness.fillStyle = COLOR.bg;
-        ctxDarkness.fillRect(0,0, SEC_AREA.width, SEC_AREA.height);
-        if (settings.isHq){
+        ctxDarkness.fillRect(0, 0, SEC_AREA.width, SEC_AREA.height);
+        if (settings.isHq) {
             ctxDarkness.shadowBlur = 1;
         }
         ctxDarkness.shadowColor = '#340034';
@@ -1226,10 +1259,10 @@
             for (let x = 0; x < grid.side * 2; x++) {
                 ctxDarkness.strokeStyle = '#620062';
                 ctxDarkness.strokeRect(
-                    randBetween(0, grid.side *2) * gridCellSize * 0.5,
-                    randBetween(0, grid.side*2) * gridCellSize * 0.5,
-                    gridCellSize*0.5,
-                    gridCellSize*0.5
+                    randBetween(0, grid.side * 2) * gridCellSize * 0.5,
+                    randBetween(0, grid.side * 2) * gridCellSize * 0.5,
+                    gridCellSize * 0.5,
+                    gridCellSize * 0.5,
                 );
             }
         }
@@ -1253,6 +1286,8 @@
             for (let x = 0; x < grid.side; x++) {
                 if (rawData[y][x].type === '#') {
                     drawWall(x, y, gridCellSize, '#c200b4', '#620056');
+                } else if (rawData[y][x].visited) {
+                    drawWall(x, y, gridCellSize, '#00b8c211', '#00b8c211');
                 }
             }
         }
@@ -1260,6 +1295,9 @@
 
         for (let y = 0; y < grid.side; y++) {
             for (let x = 0; x < grid.side; x++) {
+                if (x === grid.endPoint.x && y === grid.endPoint.y) {
+                    drawWall(x, y, gridCellSize, '#fa0e00', '#0000');
+                }
                 if (rawData[y][x].type === 'e') {
                     ctxStage.strokeStyle = '#0cff34';
                     ctxStage.strokeRect((x + 0.425) * gridCellSize, (y + 0.425) * gridCellSize, gridCellSize * 0.15, gridCellSize * 0.15)
@@ -1275,9 +1313,9 @@
         for (let y = 0; y < grid.side; y++) {
             for (let x = 0; x < grid.side; x++) {
                 if (rawData[y][x].visited) {
-                    ctxDarkness.clearRect((x-1) * gridCellSize, (y-2) * gridCellSize, 3*gridCellSize, 5*gridCellSize);
-                    ctxDarkness.clearRect((x-2) * gridCellSize, (y-1) * gridCellSize, 5*gridCellSize, 3*gridCellSize);
-                    ctxDarkness.clearRect((x-1.5) * gridCellSize, (y-1.5) * gridCellSize, 4*gridCellSize, 4*gridCellSize);
+                    ctxDarkness.clearRect((x - 1) * gridCellSize, (y - 2) * gridCellSize, 3 * gridCellSize, 5 * gridCellSize);
+                    ctxDarkness.clearRect((x - 2) * gridCellSize, (y - 1) * gridCellSize, 5 * gridCellSize, 3 * gridCellSize);
+                    ctxDarkness.clearRect((x - 1.5) * gridCellSize, (y - 1.5) * gridCellSize, 4 * gridCellSize, 4 * gridCellSize);
                 }
             }
         }
