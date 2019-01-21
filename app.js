@@ -140,7 +140,10 @@
                 this.stage[y] = [];
                 for (let x = 0; x < this.side; x++) {
                     this.stage[y][x] = {
-                        type: '#',
+                        isObstacle: true,
+                        isEnd: false,
+                        isStart: false,
+                        isRightPath: false,
                         dist: null,
                         x,
                         y,
@@ -151,7 +154,7 @@
             for (let y = 0; y < this.side; y++) {
                 for (let x = 0; x < this.side; x++) {
                     if (!this.isStageObstacle(x, y)) {
-                        this.stage[y][x].type = '.';
+                        this.stage[y][x].isObstacle = false;
                     }
                 }
             }
@@ -186,18 +189,18 @@
                 this.startPoint.y = Math.max(0, quarters[startQuarterIdx].ys - 1) * 2;
             }
 
-            this.endPoint = {};
-            while (this.endPoint.type !== '.') {
+            this.endPoint = {isObstacle: true};
+            while (this.endPoint.isObstacle) {
                 const x = randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1);
                 const y = randBetween(quarters[3 - startQuarterIdx].ys + 1, quarters[3 - startQuarterIdx].ye - 1);
 
-                if (this.stage[y][x].type === '.') {
+                if (!this.stage[y][x].isObstacle) {
                     this.endPoint = this.stage[y][x];
                 }
             }
 
             for (let i = 0; i < (this.side ** 2) / 4; i++) {
-                this.stage[randBetween(0, this.side)][randBetween(0, this.side)].type = '#';
+                this.stage[randBetween(0, this.side)][randBetween(0, this.side)].isObstacle = true;
             }
 
             let stepIdx = 1;
@@ -209,7 +212,7 @@
                 pointsAroundList = [];
                 for (const prevPoint of pointsAroundPrev) {
                     const newPointsAround = this.getPointsAround(prevPoint.x, prevPoint.y)
-                        .filter((point) => point.type === '.' && !point.dist);
+                        .filter((point) => !point.isObstacle && !point.dist);
                     pointsAroundList.push(...newPointsAround);
                 }
 
@@ -223,39 +226,45 @@
                 });
                 stepIdx++;
             }
-
             if (this.stage[this.endPoint.y][this.endPoint.x].dist === null) {
                 console.info('stage was unsolvable');
                 return this.generateStage();
             }
 
             this.stage[this.startPoint.y][this.startPoint.x] = {
-                type: '.',
+                isObstacle: false,
                 dist: 0,
                 x: this.startPoint.x,
                 y: this.startPoint.y,
             };
-            this.stage[this.endPoint.y][this.endPoint.x].type = 'e';
+            this.stage[this.endPoint.y][this.endPoint.x].isEnd = true;
 
             let prevLowestPoint = this.endPoint;
             let pointsAroundEndList = [];
             do {
                 pointsAroundEndList = this.getPointsAround(prevLowestPoint.x, prevLowestPoint.y)
                     .filter((point) => {
-                        return point.type === '.' && point.dist !== null;
+                        return !point.isObstacle && !point.isRightPath && point.dist !== null;
                     });
 
                 if (pointsAroundEndList.length) {
                     prevLowestPoint = this.getLowest([prevLowestPoint, ...pointsAroundEndList]);
-                    this.stage[prevLowestPoint.y][prevLowestPoint.x].type = 'e';
+                    this.stage[prevLowestPoint.y][prevLowestPoint.x].isRightPath = true;
                 }
             } while (pointsAroundEndList.length > 0);
 
             for (let y = 0; y < this.side; y++) {
                 for (let x = 0; x < this.side; x++) {
-                    if (this.stage[y][x].type === '.' && this.stage[y][x].dist === null) {
-                        this.stage[y][x].type = '#';
+                    if (!this.stage[y][x].isObstacle && this.stage[y][x].dist === null) {
+                        this.stage[y][x].isObstacle = true;
                     }
+                }
+            }
+
+            for (let i = 0; i < (this.side ** 2) / 8; i++) {
+                const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
+                if (!point.isObstacle && !point.isEnd && !point.isStart) {
+                    point.special = {type: 'lock', pattern: generateGoal(4)};
                 }
             }
         }
@@ -300,10 +309,10 @@
 
         getLowest(points) {
             return points.reduce((acc, n) => {
-                if (acc.type === 's') {
+                if (acc.isStart) {
                     return acc;
                 }
-                if (n.type === 's') {
+                if (n.isStart) {
                     return n;
                 }
                 return acc.dist < n.dist ? acc : n;
@@ -354,7 +363,7 @@
         }
 
         if (gameState.stage === 'INTRO') {
-            console.log(`event.key`, event.key);
+            console.info(`event.key`, event.key);
             if (event.key.toLowerCase() === 'arrowdown') {
                 systemMenu.selectedItem = (systemMenu.selectedItem + 1) % systemMenu.list.length;
             } else if (event.key.toLowerCase() === 'arrowup') {
@@ -375,42 +384,22 @@
 
         if (gameState.stage === 'GAME') {
             if (event.key.toLowerCase() === 'arrowdown') {
-                const newY = player.y + 1;
-                if (newY < grid.side && grid.stage[newY][player.x].type !== '#') {
-                    player.y = newY;
-                    grid.stage[newY][player.x].visited = true;
-                    prerenderStage();
-                }
+                moveHandler(player.x, player.y + 1, player.y + 1 < grid.side);
                 return;
             }
 
             if (event.key.toLowerCase() === 'arrowup') {
-                const newY = player.y - 1;
-                if (newY >= 0 && grid.stage[newY][player.x].type !== '#') {
-                    player.y = newY;
-                    grid.stage[newY][player.x].visited = true;
-                    prerenderStage();
-                }
+                moveHandler(player.x, player.y - 1, player.y - 1 >= 0);
                 return;
             }
 
             if (event.key.toLowerCase() === 'arrowright') {
-                const newX = player.x + 1;
-                if (newX < grid.side && grid.stage[player.y][newX].type !== '#') {
-                    player.x = newX;
-                    grid.stage[player.y][newX].visited = true;
-                    prerenderStage();
-                }
+                moveHandler(player.x + 1, player.y, player.x + 1 < grid.side);
                 return;
             }
 
             if (event.key.toLowerCase() === 'arrowleft') {
-                const newX = player.x - 1;
-                if (newX >= 0 && grid.stage[player.y][newX].type !== '#') {
-                    player.x = newX;
-                    grid.stage[player.y][newX].visited = true;
-                    prerenderStage();
-                }
+                moveHandler(player.x - 1, player.y, player.x - 1 >= 0);
                 return;
             }
 
@@ -485,9 +474,9 @@
 
     let lastTimestampHeat = 0;
     let lastTimestampEnemy = 0;
+    let lastTimestampAreaReign = 0;
 
     const currentEnemyPosition = generateEnemyPosition(6);
-    const currentGoal = generateGoal(4);
 
     const systemMenu = {
         list: [
@@ -502,6 +491,12 @@
     };
     const gameState = {
         stage: 'GAME',
+        currentGoal: null,
+        areasReign: [
+          ['', '', ''],
+          ['', '', ''],
+          ['', '', ''],
+        ],
     };
 
     const player = {
@@ -568,7 +563,7 @@
         player.y = grid.startPoint.y;
         grid.stage[grid.startPoint.y][grid.startPoint.x].visited = true;
 
-        console.log(`stage`, grid.stage);
+        console.info(`stage`, grid.stage);
 
         updateCache();
         requestAnimationFrame(loop);
@@ -694,9 +689,12 @@
         };
     }
 
+
     function main(timestamp) {
         heatDecay(timestamp);
         enemyActivity(timestamp);
+
+        consoleAreaReign(timestamp);
     }
 
     function heatDecay(timestamp) {
@@ -713,7 +711,7 @@
     }
 
     function enemyActivity(timestamp) {
-        const enemyInterval = 200;
+        const enemyInterval = 50;
         if (timestamp - lastTimestampEnemy > enemyInterval) {
             lastTimestampEnemy = fl(timestamp / enemyInterval) * enemyInterval;
 
@@ -727,6 +725,62 @@
 
             writeConsole(selectedGoalIdx, RACES[currentEnemyPosition[selectedGoalIdx]]);
         }
+    }
+
+    function consoleAreaReign(timestamp) {
+        const enemyInterval = 10000;
+        if (timestamp - lastTimestampAreaReign > enemyInterval) {
+            lastTimestampAreaReign = fl(timestamp / enemyInterval) * enemyInterval;
+
+            const areasReign = [
+                [{total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}],
+                [{total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}],
+                [{total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}],
+            ];
+
+            for(let selectedCellIdx = 0; selectedCellIdx < consoleArea.length; selectedCellIdx++) {
+                const cell = consoleArea[selectedCellIdx];
+                const x = fl((selectedCellIdx % CONSOLE.lineCols) / (CONSOLE.lineCols3));
+                const y = fl((selectedCellIdx / CONSOLE.lineCols) / (CONSOLE.lineRows3));
+                if (cell) {
+                    areasReign[y][x].total += 1;
+                    if (cell.race === 'HUMAN') {
+                        areasReign[y][x].human += 1;
+                    } else {
+                        areasReign[y][x].enemy += 1;
+                    }
+                }
+            }
+
+            const halfOfArea = CONSOLE.lineCols * CONSOLE.lineRows / 18;
+
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    if (areasReign[y][x].total > halfOfArea) {
+                        gameState.areasReign[y][x] = (areasReign[y][x].human >= areasReign[y][x].enemy) ? 'HUMAN' : 'ENEMY';
+                    }
+                }
+            }
+        }
+    }
+
+
+    function moveHandler(x, y, boundaryCond) {
+        if (boundaryCond && !grid.stage[y][x].isObstacle) {
+            player.x = x;
+            player.y = y;
+            grid.stage[y][x].visited = true;
+            if (grid.stage[y][x].special) {
+                switchToGoal(grid.stage[y][x].special.pattern)
+            } else {
+                switchToGoal(null);
+            }
+            prerenderStage();
+        }
+    }
+
+    function switchToGoal(goal) {
+        gameState.currentGoal = goal;
     }
 
 
@@ -1011,13 +1065,49 @@
 
         // draw selected area bg
         if (selectedArea.row !== null && selectedArea.col !== null) {
-            ctxMain.fillStyle = '#030';
-            ctxMain.fillRect(
-                CONSOLE.left + selectedArea.col * CONSOLE.width / 3,
-                CONSOLE.top + selectedArea.row * CONSOLE.height / 3,
-                CONSOLE.width / 3,
-                CONSOLE.height / 3,
+            ctxMain.strokeStyle = '#00a000';
+            ctxMain.strokeRect(
+                CONSOLE.left + selectedArea.col * CONSOLE.width / 3 + 2,
+                CONSOLE.top + selectedArea.row * CONSOLE.height / 3 + 2,
+                CONSOLE.width / 3 - 4,
+                CONSOLE.height / 3 - 4,
             );
+        }
+
+        if (gameState.currentGoal) {
+            ctxMain.strokeStyle = '#d200c3';
+            for (const key in gameState.currentGoal) {
+                if (gameState.currentGoal[key]){
+                    ctxMain.strokeRect(
+                        CONSOLE.left + (key % 3) * CONSOLE.width / 3,
+                        CONSOLE.top + fl(key / 3) * CONSOLE.height / 3,
+                        CONSOLE.width / 3,
+                        CONSOLE.height / 3,
+                    );
+                }
+            }
+        }
+
+        for (let y = 0; y < 3; y++) {
+            for (let x = 0; x < 3; x++) {
+                if (gameState.areasReign[y][x] === 'HUMAN') {
+                    ctxMain.fillStyle = '#030';
+                    ctxMain.fillRect(
+                        CONSOLE.left + x * CONSOLE.width / 3 + 2,
+                        CONSOLE.top + y * CONSOLE.height / 3 + 2,
+                        CONSOLE.width / 3 - 4,
+                        CONSOLE.height / 3 - 4,
+                    );
+                } else if (gameState.areasReign[y][x] === 'ENEMY') {
+                    ctxMain.fillStyle = '#300';
+                    ctxMain.fillRect(
+                        CONSOLE.left + x * CONSOLE.width / 3 + 2,
+                        CONSOLE.top + y * CONSOLE.height / 3 + 2,
+                        CONSOLE.width / 3 - 4,
+                        CONSOLE.height / 3 - 4,
+                    );
+                }
+            }
         }
 
         // draw console grid area boundaries
@@ -1270,8 +1360,6 @@
 
     function prerenderStage() {
         ctxStage.save();
-        const rawData = grid.stage;
-
         const gridCellSize = 24;
 
         ctxStage.fillStyle = '#001021';
@@ -1284,9 +1372,9 @@
         ctxStage.shadowColor = '#c200b4';
         for (let y = 0; y < grid.side; y++) {
             for (let x = 0; x < grid.side; x++) {
-                if (rawData[y][x].type === '#') {
+                if (grid.stage[y][x].isObstacle) {
                     drawWall(x, y, gridCellSize, '#c200b4', '#620056');
-                } else if (rawData[y][x].visited) {
+                } else if (grid.stage[y][x].visited) {
                     drawWall(x, y, gridCellSize, '#00b8c211', '#00b8c211');
                 }
             }
@@ -1298,21 +1386,29 @@
                 if (x === grid.endPoint.x && y === grid.endPoint.y) {
                     drawWall(x, y, gridCellSize, '#fa0e00', '#0000');
                 }
-                if (rawData[y][x].type === 'e') {
+                if (grid.stage[y][x].isRightPath) {
                     ctxStage.strokeStyle = '#0cff34';
                     ctxStage.strokeRect((x + 0.425) * gridCellSize, (y + 0.425) * gridCellSize, gridCellSize * 0.15, gridCellSize * 0.15)
                 }
             }
         }
 
+        for (let y = 0; y < grid.side; y++) {
+            for (let x = 0; x < grid.side; x++) {
+                if (grid.stage[y][x].special) {
+                    drawWall(x, y, gridCellSize, '#fad100', '#aea300');
+                }
+            }
+        }
+
+
         ctxStage.shadowColor = '#0ca8df';
         ctxStage.fillRect((player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
-
         ctxStage.drawImage(imageSpace, (player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
 
         for (let y = 0; y < grid.side; y++) {
             for (let x = 0; x < grid.side; x++) {
-                if (rawData[y][x].visited) {
+                if (grid.stage[y][x].visited) {
                     ctxDarkness.clearRect((x - 1) * gridCellSize, (y - 2) * gridCellSize, 3 * gridCellSize, 5 * gridCellSize);
                     ctxDarkness.clearRect((x - 2) * gridCellSize, (y - 1) * gridCellSize, 5 * gridCellSize, 3 * gridCellSize);
                     ctxDarkness.clearRect((x - 1.5) * gridCellSize, (y - 1.5) * gridCellSize, 4 * gridCellSize, 4 * gridCellSize);
