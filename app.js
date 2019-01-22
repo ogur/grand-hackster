@@ -151,13 +151,12 @@
                 }
             }
 
-            for (let y = 0; y < this.side; y++) {
-                for (let x = 0; x < this.side; x++) {
-                    if (!this.isStageObstacle(x, y)) {
-                        this.stage[y][x].isObstacle = false;
-                    }
+            // placing inner walls
+            loop2d(this.stage, this.side, this.side, (point, x, y) => {
+                if (!this.isStageObstacle(x, y)) {
+                    point.isObstacle = false;
                 }
-            }
+            });
 
             const quarters = [
                 {
@@ -180,6 +179,7 @@
 
             const startQuarterIdx = randOf([0, 1, 2, 3]);
 
+            // placing start point
             this.startPoint = {};
             if (rnd() > 0.5) {
                 this.startPoint.x = Math.max(0, quarters[startQuarterIdx].xs - 1) * 2;
@@ -189,6 +189,7 @@
                 this.startPoint.y = Math.max(0, quarters[startQuarterIdx].ys - 1) * 2;
             }
 
+            // placing endpoint
             this.endPoint = {isObstacle: true};
             while (this.endPoint.isObstacle) {
                 const x = randBetween(quarters[3 - startQuarterIdx].xs + 1, quarters[3 - startQuarterIdx].xe - 1);
@@ -203,6 +204,7 @@
                 this.stage[randBetween(0, this.side)][randBetween(0, this.side)].isObstacle = true;
             }
 
+            // checking if solvable
             let stepIdx = 1;
             let pointsAroundPrev = [];
             let pointsAroundList = [this.startPoint];
@@ -239,6 +241,7 @@
             };
             this.stage[this.endPoint.y][this.endPoint.x].isEnd = true;
 
+            // finding path to goal
             let prevLowestPoint = this.endPoint;
             let pointsAroundEndList = [];
             do {
@@ -253,18 +256,21 @@
                 }
             } while (pointsAroundEndList.length > 0);
 
-            for (let y = 0; y < this.side; y++) {
-                for (let x = 0; x < this.side; x++) {
-                    if (!this.stage[y][x].isObstacle && this.stage[y][x].dist === null) {
-                        this.stage[y][x].isObstacle = true;
-                    }
+            // placing additional walls
+            loop2d(this.stage, this.side, this.side, (point, x, y) => {
+                if (!point.isObstacle && point.dist === null) {
+                    point.isObstacle = true;
                 }
-            }
+            });
 
-            for (let i = 0; i < (this.side ** 2) / 8; i++) {
+            // placing locks
+            let lockPlaced = 0;
+            for (let i = 0; lockPlaced < 5 && i < 400; i++) {
                 const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
-                if (!point.isObstacle && !point.isEnd && !point.isStart) {
+                if (!point.isObstacle && !point.isEnd && !point.isStart && point.isRightPath && this.isDoorSpace(point.x, point.y)) {
                     point.special = {type: 'lock', pattern: generateGoal(4)};
+                    point.isObstacle = true;
+                    lockPlaced++;
                 }
             }
         }
@@ -281,6 +287,24 @@
                     && y !== 0
                     && y !== this.side - 1
                 ));
+        }
+
+        isDoorSpace(x, y) {
+            if (x === 0 || x === this.side - 1 || y === 0 || y === this.side - 1) {
+                return false;
+            }
+            if (this.stage[y - 1][x - 1].special || this.stage[y - 1][x].special || this.stage[y - 1][x + 1].special
+                || this.stage[y][x - 1].special || this.stage[y][x].special || this.stage[y][x + 1].special
+                || this.stage[y + 1][x - 1].special || this.stage[y + 1][x].special || this.stage[y + 1][x + 1].special) {
+                return false;
+            }
+            if (
+                (this.stage[y - 1][x].isObstacle && this.stage[y + 1][x].isObstacle && !this.stage[y][x - 1].isObstacle && !this.stage[y][x + 1].isObstacle)
+                ||
+                (this.stage[y][x - 1].isObstacle && this.stage[y][x + 1].isObstacle && !this.stage[y - 1][x].isObstacle && !this.stage[y + 1][x].isObstacle)
+            ) {
+                return true;
+            }
         }
 
         getPointNoWrap(x, y) {
@@ -353,6 +377,7 @@
     const imageAbout = document.querySelector('#sourceAbout');
 
     document.addEventListener('keydown', (event) => {
+        console.log(`event.key`, event.key);
         if (!['f5', 'f11', 'f12'].includes(event.key.toLocaleLowerCase())) {
             event.preventDefault();
         }
@@ -401,6 +426,10 @@
             if (event.key.toLowerCase() === 'arrowleft') {
                 moveHandler(player.x - 1, player.y, player.x - 1 >= 0);
                 return;
+            }
+
+            if (event.key.toLowerCase() === 'enter') {
+
             }
 
             if (event.key === ' ') {
@@ -493,9 +522,9 @@
         stage: 'GAME',
         currentGoal: null,
         areasReign: [
-          ['', '', ''],
-          ['', '', ''],
-          ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
         ],
     };
 
@@ -544,6 +573,15 @@
             input = input.slice(chunkLen);
         }
         return output;
+    }
+
+    function loop2d(arr, xLen, yLen, cb) {
+        for (let y = 0; y < yLen; y++) {
+            for (let x = 0; x < xLen; x++) {
+                const val = arr && arr[y] && arr[y][x];
+                cb(val, x, y, arr);
+            }
+        }
     }
 
     function createCrx(width, height) {
@@ -711,7 +749,7 @@
     }
 
     function enemyActivity(timestamp) {
-        const enemyInterval = 50;
+        const enemyInterval = 10;
         if (timestamp - lastTimestampEnemy > enemyInterval) {
             lastTimestampEnemy = fl(timestamp / enemyInterval) * enemyInterval;
 
@@ -728,7 +766,7 @@
     }
 
     function consoleAreaReign(timestamp) {
-        const enemyInterval = 10000;
+        const enemyInterval = 500;
         if (timestamp - lastTimestampAreaReign > enemyInterval) {
             lastTimestampAreaReign = fl(timestamp / enemyInterval) * enemyInterval;
 
@@ -738,7 +776,7 @@
                 [{total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}, {total: 0, human: 0, enemy: 0}],
             ];
 
-            for(let selectedCellIdx = 0; selectedCellIdx < consoleArea.length; selectedCellIdx++) {
+            for (let selectedCellIdx = 0; selectedCellIdx < consoleArea.length; selectedCellIdx++) {
                 const cell = consoleArea[selectedCellIdx];
                 const x = fl((selectedCellIdx % CONSOLE.lineCols) / (CONSOLE.lineCols3));
                 const y = fl((selectedCellIdx / CONSOLE.lineCols) / (CONSOLE.lineRows3));
@@ -754,27 +792,24 @@
 
             const halfOfArea = CONSOLE.lineCols * CONSOLE.lineRows / 18;
 
-            for (let y = 0; y < 3; y++) {
-                for (let x = 0; x < 3; x++) {
-                    if (areasReign[y][x].total > halfOfArea) {
-                        gameState.areasReign[y][x] = (areasReign[y][x].human >= areasReign[y][x].enemy) ? 'HUMAN' : 'ENEMY';
-                    }
+            loop2d(areasReign, 3, 3, (val, x, y) => {
+                if (val.total > halfOfArea) {
+                    gameState.areasReign[y][x] = (val.human >= val.enemy) ? 'HUMAN' : 'ENEMY';
                 }
-            }
+            });
         }
     }
 
 
     function moveHandler(x, y, boundaryCond) {
-        if (boundaryCond && !grid.stage[y][x].isObstacle) {
+        if (grid.stage[y][x].special) {
+            switchToGoal(grid.stage[y][x])
+        } else if (boundaryCond && !grid.stage[y][x].isObstacle) {
+            switchToGoal(null);
             player.x = x;
             player.y = y;
             grid.stage[y][x].visited = true;
-            if (grid.stage[y][x].special) {
-                switchToGoal(grid.stage[y][x].special.pattern)
-            } else {
-                switchToGoal(null);
-            }
+
             prerenderStage();
         }
     }
@@ -801,7 +836,7 @@
             goal[fl(Math.random() * 9)] = 0;
         }
 
-        return goal;
+        return chunk(goal, 3);
     }
 
 
@@ -1061,11 +1096,16 @@
         ctxMain.save();
         // draw console bg
         ctxMain.fillStyle = '#222';
+        if (settings.isHq) {
+            ctxMain.shadowBlur = 3;
+        }
+        ctxMain.lineWidth = 3;
         ctxMain.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
 
         // draw selected area bg
         if (selectedArea.row !== null && selectedArea.col !== null) {
             ctxMain.strokeStyle = '#00a000';
+            ctxMain.shadowColor = '#00a000';
             ctxMain.strokeRect(
                 CONSOLE.left + selectedArea.col * CONSOLE.width / 3 + 2,
                 CONSOLE.top + selectedArea.row * CONSOLE.height / 3 + 2,
@@ -1074,55 +1114,50 @@
             );
         }
 
+        // area reign
+        loop2d(gameState.areasReign, 3, 3, (val, x, y) => {
+            if (val === 'HUMAN') {
+                ctxMain.fillStyle = '#030';
+                ctxMain.fillRect(
+                    CONSOLE.left + x * CONSOLE.width / 3 + 2,
+                    CONSOLE.top + y * CONSOLE.height / 3 + 2,
+                    CONSOLE.width / 3 - 4,
+                    CONSOLE.height / 3 - 4,
+                );
+            } else if (val === 'ENEMY') {
+                ctxMain.fillStyle = '#300';
+                ctxMain.fillRect(
+                    CONSOLE.left + x * CONSOLE.width / 3 + 2,
+                    CONSOLE.top + y * CONSOLE.height / 3 + 2,
+                    CONSOLE.width / 3 - 4,
+                    CONSOLE.height / 3 - 4,
+                );
+            }
+        });
+
+        // current goal
         if (gameState.currentGoal) {
-            ctxMain.strokeStyle = '#d200c3';
-            for (const key in gameState.currentGoal) {
-                if (gameState.currentGoal[key]){
-                    ctxMain.strokeRect(
-                        CONSOLE.left + (key % 3) * CONSOLE.width / 3,
-                        CONSOLE.top + fl(key / 3) * CONSOLE.height / 3,
-                        CONSOLE.width / 3,
-                        CONSOLE.height / 3,
-                    );
-                }
+            ctxMain.strokeStyle = '#6bc4ff';
+            ctxMain.shadowColor = '#6bc4ff';
+            ctxMain.lineWidth = 3;
+            for (const key in gameState.currentGoal.special.pattern) {
+                const pattern = gameState.currentGoal.special.pattern;
+
+                loop2d(pattern, 3, 3, (val, x, y) => {
+                    if (val) {
+                        ctxMain.strokeRect(
+                            CONSOLE.left + x * CONSOLE.width / 3 + 10,
+                            CONSOLE.top + y * CONSOLE.height / 3 + 10,
+                            CONSOLE.width / 3 - 20,
+                            CONSOLE.height / 3 - 20,
+                        );
+                    }
+                });
             }
         }
-
-        for (let y = 0; y < 3; y++) {
-            for (let x = 0; x < 3; x++) {
-                if (gameState.areasReign[y][x] === 'HUMAN') {
-                    ctxMain.fillStyle = '#030';
-                    ctxMain.fillRect(
-                        CONSOLE.left + x * CONSOLE.width / 3 + 2,
-                        CONSOLE.top + y * CONSOLE.height / 3 + 2,
-                        CONSOLE.width / 3 - 4,
-                        CONSOLE.height / 3 - 4,
-                    );
-                } else if (gameState.areasReign[y][x] === 'ENEMY') {
-                    ctxMain.fillStyle = '#300';
-                    ctxMain.fillRect(
-                        CONSOLE.left + x * CONSOLE.width / 3 + 2,
-                        CONSOLE.top + y * CONSOLE.height / 3 + 2,
-                        CONSOLE.width / 3 - 4,
-                        CONSOLE.height / 3 - 4,
-                    );
-                }
-            }
-        }
-
-        // draw console grid area boundaries
-        if (settings.isHq) {
-            ctxMain.shadowBlur = 3;
-        }
-        ctxMain.strokeStyle = '#f993';
-        ctxMain.strokeRect(CONSOLE.left + CONSOLE.width / 3, CONSOLE.top, 1, CONSOLE.height);
-        ctxMain.strokeRect(CONSOLE.left + CONSOLE.width * 2 / 3, CONSOLE.top, 1, CONSOLE.height);
-        ctxMain.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height / 3, CONSOLE.width, 1);
-        ctxMain.strokeRect(CONSOLE.left, CONSOLE.top + CONSOLE.height * 2 / 3, CONSOLE.width, 1);
+        ctxMain.restore();
 
         ctxMain.drawImage(ctxConsole.canvas, CONSOLE.left, CONSOLE.top);
-
-        ctxMain.restore();
     }
 
 
@@ -1183,7 +1218,7 @@
             (SEC_AREA.width - stageSide) * 0.5,
             (SEC_AREA.height - stageSide) * 0.5,
             stageSide,
-            stageSide
+            stageSide,
         );
         ctxSec.restore();
 
@@ -1192,7 +1227,7 @@
             stageSide, stageSide,
             (SEC_AREA.width - stageSide) * 0.5,
             (SEC_AREA.height - stageSide) * 0.5,
-            stageSide, stageSide
+            stageSide, stageSide,
         );
     }
 
@@ -1299,7 +1334,7 @@
     }
 
     function prerenderKeyboard() {
-        ctxKeyboard.clearRect(0,0, KEYBOARD.width, KEYBOARD.height);
+        ctxKeyboard.clearRect(0, 0, KEYBOARD.width, KEYBOARD.height);
         for (const key of Object.values(keys)) {
             drawKey(key);
         }
@@ -1327,10 +1362,10 @@
         let path = 'M 0 0';
 
         for (let i = 0; i < gridSize; i++) {
-            path += ` L 0 ${start[i] * gridCellSize + gridSize*1.75}`;
-            path += ` L ${SEC_AREA.width} ${start[i] * gridCellSize + gridSize*1.75}`;
-            path += ` L ${SEC_AREA.width} ${(start[i] + 0.5) * gridCellSize + gridSize*1.75}`;
-            path += ` L 0 ${(start[i] + 0.5) * gridCellSize + gridSize*1.75}`;
+            path += ` L 0 ${start[i] * gridCellSize + gridSize * 1.75}`;
+            path += ` L ${SEC_AREA.width} ${start[i] * gridCellSize + gridSize * 1.75}`;
+            path += ` L ${SEC_AREA.width} ${(start[i] + 0.5) * gridCellSize + gridSize * 1.75}`;
+            path += ` L 0 ${(start[i] + 0.5) * gridCellSize + gridSize * 1.75}`;
         }
 
         stageBgPath = new Path2D(path);
@@ -1345,17 +1380,15 @@
         }
         ctxDarkness.shadowColor = '#340034';
 
-        for (let y = 0; y < grid.side * 2; y++) {
-            for (let x = 0; x < grid.side * 2; x++) {
-                ctxDarkness.strokeStyle = '#620062';
-                ctxDarkness.strokeRect(
-                    randBetween(0, grid.side * 2) * gridCellSize * 0.5,
-                    randBetween(0, grid.side * 2) * gridCellSize * 0.5,
-                    gridCellSize * 0.5,
-                    gridCellSize * 0.5,
-                );
-            }
-        }
+        loop2d([], grid.side * 2, grid.side * 2, () => {
+            ctxDarkness.strokeStyle = '#620062';
+            ctxDarkness.strokeRect(
+                randBetween(0, grid.side * 2) * gridCellSize * 0.5,
+                randBetween(0, grid.side * 2) * gridCellSize * 0.5,
+                gridCellSize * 0.5,
+                gridCellSize * 0.5,
+            );
+        });
     }
 
     function prerenderStage() {
@@ -1370,51 +1403,45 @@
             ctxStage.shadowBlur = 3;
         }
         ctxStage.shadowColor = '#c200b4';
-        for (let y = 0; y < grid.side; y++) {
-            for (let x = 0; x < grid.side; x++) {
-                if (grid.stage[y][x].isObstacle) {
-                    drawWall(x, y, gridCellSize, '#c200b4', '#620056');
-                } else if (grid.stage[y][x].visited) {
-                    drawWall(x, y, gridCellSize, '#00b8c211', '#00b8c211');
-                }
+
+        loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
+            if (point.isObstacle) {
+                drawWall(x, y, gridCellSize, '#c200b4', '#620056');
+            } else if (point.visited) {
+                drawWall(x, y, gridCellSize, '#00b8c211', '#00b8c211');
             }
-        }
+        });
 
 
-        for (let y = 0; y < grid.side; y++) {
-            for (let x = 0; x < grid.side; x++) {
-                if (x === grid.endPoint.x && y === grid.endPoint.y) {
-                    drawWall(x, y, gridCellSize, '#fa0e00', '#0000');
-                }
-                if (grid.stage[y][x].isRightPath) {
-                    ctxStage.strokeStyle = '#0cff34';
-                    ctxStage.strokeRect((x + 0.425) * gridCellSize, (y + 0.425) * gridCellSize, gridCellSize * 0.15, gridCellSize * 0.15)
-                }
+        loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
+            if (x === grid.endPoint.x && y === grid.endPoint.y) {
+                drawWall(x, y, gridCellSize, '#fa0e00', '#0000');
             }
-        }
+            if (point.isRightPath) {
+                ctxStage.strokeStyle = '#0cff34';
+                ctxStage.strokeRect((x + 0.425) * gridCellSize, (y + 0.425) * gridCellSize, gridCellSize * 0.15, gridCellSize * 0.15)
+            }
+        });
 
-        for (let y = 0; y < grid.side; y++) {
-            for (let x = 0; x < grid.side; x++) {
-                if (grid.stage[y][x].special) {
-                    drawWall(x, y, gridCellSize, '#fad100', '#aea300');
-                }
+        loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
+            if (point.special) {
+                drawWall(x, y, gridCellSize, '#fa000a', '#9196b8');
             }
-        }
+        });
 
 
         ctxStage.shadowColor = '#0ca8df';
         ctxStage.fillRect((player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
         ctxStage.drawImage(imageSpace, (player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
 
-        for (let y = 0; y < grid.side; y++) {
-            for (let x = 0; x < grid.side; x++) {
-                if (grid.stage[y][x].visited) {
-                    ctxDarkness.clearRect((x - 1) * gridCellSize, (y - 2) * gridCellSize, 3 * gridCellSize, 5 * gridCellSize);
-                    ctxDarkness.clearRect((x - 2) * gridCellSize, (y - 1) * gridCellSize, 5 * gridCellSize, 3 * gridCellSize);
-                    ctxDarkness.clearRect((x - 1.5) * gridCellSize, (y - 1.5) * gridCellSize, 4 * gridCellSize, 4 * gridCellSize);
-                }
+        loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
+            if (point.visited) {
+                ctxDarkness.clearRect((x - 0.5) * gridCellSize, (y - 0.5) * gridCellSize, 2 * gridCellSize, 2 * gridCellSize);
+                ctxDarkness.clearRect((x - 1) * gridCellSize, (y) * gridCellSize, 3 * gridCellSize, gridCellSize);
+                ctxDarkness.clearRect((x) * gridCellSize, (y - 1) * gridCellSize, gridCellSize, 3 * gridCellSize);
             }
-        }
+        });
+
         ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
 
         ctxStage.fillStyle = '#000';
