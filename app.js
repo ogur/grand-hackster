@@ -268,7 +268,7 @@
             for (let i = 0; lockPlaced < 5 && i < 400; i++) {
                 const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
                 if (!point.isObstacle && !point.isEnd && !point.isStart && point.isRightPath && this.isDoorSpace(point.x, point.y)) {
-                    point.special = {type: 'lock', pattern: generateGoal(4)};
+                    point.special = {type: 'lock', pattern: generateGoal(lockPlaced + 1)};
                     point.isObstacle = true;
                     lockPlaced++;
                 }
@@ -377,7 +377,6 @@
     const imageAbout = document.querySelector('#sourceAbout');
 
     document.addEventListener('keydown', (event) => {
-        console.log(`event.key`, event.key);
         if (!['f5', 'f11', 'f12'].includes(event.key.toLocaleLowerCase())) {
             event.preventDefault();
         }
@@ -429,7 +428,25 @@
             }
 
             if (event.key.toLowerCase() === 'enter') {
+                if (gameState.currentGoal) {
+                    let isComplete = true;
 
+                    loop2d(gameState.currentGoal.special.pattern, 3, 3, (val, x, y) => {
+                        if (val && gameState.areasReign[y][x] !== 'HUMAN') {
+                            isComplete = false;
+                        }
+                    });
+
+                    if (isComplete) {
+                        gameState.currentGoal.isObstacle = false;
+                        gameState.currentGoal.special = null;
+                        gameState.currentGoal = null;
+
+                        prerenderStage();
+                    } else {
+                        playWrongKey();
+                    }
+                }
             }
 
             if (event.key === ' ') {
@@ -466,15 +483,18 @@
                 const targetRow = selectedArea.row !== null ? selectedArea.row : key.groupRow;
                 const targetCol = selectedArea.col !== null ? selectedArea.col : key.groupCol;
 
-                for (let cellIdx = 0; cellIdx < CONSOLE.areaLimit; cellIdx++) {
-                    const targetCellRow = targetRow * CONSOLE.lineRows3 + fl(cellIdx / CONSOLE.lineCols3);
-                    const targetCellColOffset = targetCol * CONSOLE.lineCols3;
-                    const targetCellIdx = targetCellRow * CONSOLE.lineCols + targetCellColOffset + cellIdx % CONSOLE.lineCols3;
+                const degree = fl(key.heat / 6) + 1;
+                for (let keyRep = 0; keyRep < degree; keyRep++) {
+                    for (let cellIdx = 0; cellIdx < CONSOLE.areaLimit; cellIdx++) {
+                        const targetCellRow = targetRow * CONSOLE.lineRows3 + fl(cellIdx / CONSOLE.lineCols3);
+                        const targetCellColOffset = targetCol * CONSOLE.lineCols3;
+                        const targetCellIdx = targetCellRow * CONSOLE.lineCols + targetCellColOffset + cellIdx % CONSOLE.lineCols3;
 
-                    if (!consoleArea[targetCellIdx] || consoleArea[targetCellIdx].race !== 'HUMAN') {
-                        consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx]};
-                        writeHumanAction(targetCellIdx);
-                        break;
+                        if (!consoleArea[targetCellIdx] || consoleArea[targetCellIdx].race !== 'HUMAN') {
+                            consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx]};
+                            writeHumanAction(targetCellIdx);
+                            break;
+                        }
                     }
                 }
             }
@@ -526,6 +546,7 @@
             ['', '', ''],
             ['', '', ''],
         ],
+
     };
 
     const player = {
@@ -745,11 +766,12 @@
                     keys[key].heat = Math.max(keys[key].heat - 1, 0);
                 }
             }
+            prerenderKeyboard();
         }
     }
 
     function enemyActivity(timestamp) {
-        const enemyInterval = 10;
+        const enemyInterval = 25;
         if (timestamp - lastTimestampEnemy > enemyInterval) {
             lastTimestampEnemy = fl(timestamp / enemyInterval) * enemyInterval;
 
@@ -766,7 +788,7 @@
     }
 
     function consoleAreaReign(timestamp) {
-        const enemyInterval = 500;
+        const enemyInterval = 1000;
         if (timestamp - lastTimestampAreaReign > enemyInterval) {
             lastTimestampAreaReign = fl(timestamp / enemyInterval) * enemyInterval;
 
@@ -794,7 +816,12 @@
 
             loop2d(areasReign, 3, 3, (val, x, y) => {
                 if (val.total > halfOfArea) {
+                    const prevReign = gameState.areasReign[y][x];
                     gameState.areasReign[y][x] = (val.human >= val.enemy) ? 'HUMAN' : 'ENEMY';
+
+                    if (gameState.areasReign[y][x] === 'HUMAN' && prevReign !== 'HUMAN') {
+                        playReignWin();
+                    }
                 }
             });
         }
@@ -1462,6 +1489,30 @@
         ctxStage.fillRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize)
         ctxStage.strokeStyle = strokeStyle;
         ctxStage.strokeRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize);
+    }
+
+    function playReignWin() {
+        const audioContext = new AudioContext();
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        osc.type = 'square';
+        gain.connect(audioContext.destination);
+        osc.start(0);
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 1.5);
+    }
+
+    function playWrongKey() {
+        const audioContext = new AudioContext();
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        osc.type = 'square';
+        osc.frequency.value = 180;
+        // gain.gain.value = 10;
+        gain.connect(audioContext.destination);
+        osc.start(0);
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 1.5);
     }
 
 })();
