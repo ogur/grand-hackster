@@ -371,7 +371,15 @@
     /**
      * @type {CanvasRenderingContext2D | WebGLRenderingContext}
      */
+    const ctxDarknessBase = createCrx(SEC_AREA.width, SEC_AREA.height);
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
     const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
+    /**
+     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
+     */
+    const ctxTimer = createCrx(150, 50);
 
     const imageSpace = document.querySelector('#sourceSpace');
     const imageAbout = document.querySelector('#sourceAbout');
@@ -524,8 +532,8 @@
     let lastTimestampHeat = 0;
     let lastTimestampEnemy = 0;
     let lastTimestampAreaReign = 0;
-
-    const currentEnemyPosition = generateEnemyPosition(6);
+    let lastTimestampEnemyGoal = 0;
+    let lastTimestampLevelTimer = 0;
 
     const systemMenu = {
         list: [
@@ -546,7 +554,9 @@
             ['', '', ''],
             ['', '', ''],
         ],
-
+        currentEnemyPosition: null,
+        levelEnemyPosition: null,
+        levelTimerStart: null,
     };
 
     const player = {
@@ -620,9 +630,15 @@
 
         player.x = grid.startPoint.x;
         player.y = grid.startPoint.y;
-        grid.stage[grid.startPoint.y][grid.startPoint.x].visited = true;
+        grid.stage[grid.startPoint.y][grid.startPoint.x].isVisited = true;
 
         console.info(`stage`, grid.stage);
+
+        gameState.levelTimerStart = Date.now();
+        gameState.levelEnemyPosition = Object.keys(RACES).sort(() => 0.5 - rnd());
+        gameState.currentEnemyPosition = generateEnemyPosition(6);
+
+        createDarkness();
 
         updateCache();
         requestAnimationFrame(loop);
@@ -750,10 +766,26 @@
 
 
     function main(timestamp) {
-        heatDecay(timestamp);
-        enemyActivity(timestamp);
+        if (gameState.stage === 'GAME') {
+            levelTimer(timestamp);
 
-        consoleAreaReign(timestamp);
+            enemyGoalChange(timestamp);
+            heatDecay(timestamp);
+            enemyActivity(timestamp);
+
+            consoleAreaReign(timestamp);
+        }
+    }
+
+
+
+    function levelTimer(timestamp) {
+        const levelTimerInterval = 210;
+        if (timestamp - lastTimestampLevelTimer > levelTimerInterval) {
+            lastTimestampLevelTimer = fl(timestamp / levelTimerInterval) * levelTimerInterval;
+
+            prerenderTimer();
+        }
     }
 
     function heatDecay(timestamp) {
@@ -776,14 +808,21 @@
             lastTimestampEnemy = fl(timestamp / enemyInterval) * enemyInterval;
 
             let selectedArea = fl(rnd() * 9);
-            while (currentEnemyPosition[selectedArea] === 0) {
+            while (gameState.currentEnemyPosition[selectedArea] === 0) {
                 selectedArea = fl(rnd() * 9);
             }
 
-            const goalRaceIdxList = Object.keys(currentEnemyPosition).filter((x, i) => !!currentEnemyPosition[i]);
+            const goalRaceIdxList = Object.keys(gameState.currentEnemyPosition).filter((x, i) => !!gameState.currentEnemyPosition[i]);
             const selectedGoalIdx = randOf(goalRaceIdxList);
 
-            writeConsole(selectedGoalIdx, RACES[currentEnemyPosition[selectedGoalIdx]]);
+            writeConsole(selectedGoalIdx, RACES[gameState.currentEnemyPosition[selectedGoalIdx]]);
+
+            const point = grid.stage[randBetween(1, grid.side)][randBetween(1, grid.side)];
+
+            if (point.isVisited && rnd() > 0.95) {
+                point.isVisited = false;
+                prerenderStage();
+            }
         }
     }
 
@@ -827,6 +866,15 @@
         }
     }
 
+    function enemyGoalChange(timestamp) {
+        const enemyGoalChangeInterval = 1000;
+        if (timestamp - lastTimestampEnemyGoal > enemyGoalChangeInterval) {
+            lastTimestampEnemyGoal = fl(timestamp / enemyGoalChangeInterval) * enemyGoalChangeInterval;
+
+            gameState.currentEnemyPosition = generateEnemyPosition(6);
+        }
+    }
+
 
     function moveHandler(x, y, boundaryCond) {
         if (grid.stage[y][x].special) {
@@ -835,7 +883,7 @@
             switchToGoal(null);
             player.x = x;
             player.y = y;
-            grid.stage[y][x].visited = true;
+            grid.stage[y][x].isVisited = true;
 
             prerenderStage();
         }
@@ -847,7 +895,7 @@
 
 
     function generateEnemyPosition(size) {
-        const goal = Object.keys(RACES).sort(() => 0.5 - rnd());
+        const goal = gameState.levelEnemyPosition.slice();
 
         while (goal.reduce((sum, n) => sum + !!n, 0) > size) {
             goal[fl(rnd() * 9)] = null;
@@ -1131,6 +1179,7 @@
 
         // draw selected area bg
         if (selectedArea.row !== null && selectedArea.col !== null) {
+            ctxMain.save();
             ctxMain.strokeStyle = '#00a000';
             ctxMain.shadowColor = '#00a000';
             ctxMain.strokeRect(
@@ -1139,6 +1188,7 @@
                 CONSOLE.width / 3 - 4,
                 CONSOLE.height / 3 - 4,
             );
+            ctxMain.restore();
         }
 
         // area reign
@@ -1256,6 +1306,9 @@
             (SEC_AREA.height - stageSide) * 0.5,
             stageSide, stageSide,
         );
+
+
+        ctxSec.drawImage(ctxTimer.canvas, 10, 10);
     }
 
 
@@ -1286,6 +1339,7 @@
         prerenderKeyboardSeparator();
         prerenderStageLine();
         prerenderDarkness();
+        prerenderTimer();
         prerenderStage();
     }
 
@@ -1398,24 +1452,73 @@
         stageBgPath = new Path2D(path);
     }
 
-    function prerenderDarkness() {
+    function createDarkness() {
         const gridCellSize = 24;
-        ctxDarkness.fillStyle = COLOR.bg;
-        ctxDarkness.fillRect(0, 0, SEC_AREA.width, SEC_AREA.height);
+        ctxDarknessBase.fillStyle = COLOR.bg;
+        ctxDarknessBase.fillRect(0, 0, SEC_AREA.width, SEC_AREA.height);
         if (settings.isHq) {
-            ctxDarkness.shadowBlur = 1;
+            ctxDarknessBase.shadowBlur = 1;
         }
-        ctxDarkness.shadowColor = '#340034';
+        ctxDarknessBase.shadowColor = '#340034';
 
         loop2d([], grid.side * 2, grid.side * 2, () => {
-            ctxDarkness.strokeStyle = '#620062';
-            ctxDarkness.strokeRect(
+            ctxDarknessBase.strokeStyle = '#620062';
+            ctxDarknessBase.strokeRect(
                 randBetween(0, grid.side * 2) * gridCellSize * 0.5,
                 randBetween(0, grid.side * 2) * gridCellSize * 0.5,
                 gridCellSize * 0.5,
                 gridCellSize * 0.5,
             );
         });
+    }
+
+    function prerenderDarkness() {
+        const gridCellSize = 24;
+        ctxDarkness.drawImage(ctxDarknessBase.canvas, 0, 0);
+
+        // cutting visible
+        loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
+            if (point.isVisited) {
+                ctxDarkness.clearRect((x - 0.5) * gridCellSize, (y - 0.5) * gridCellSize, 2 * gridCellSize, 2 * gridCellSize);
+                ctxDarkness.clearRect((x - 1) * gridCellSize, (y) * gridCellSize, 3 * gridCellSize, gridCellSize);
+                ctxDarkness.clearRect((x) * gridCellSize, (y - 1) * gridCellSize, gridCellSize, 3 * gridCellSize);
+            }
+        });
+
+        ctxDarkness.clearRect((player.x - 0.5) * gridCellSize, (player.y - 0.5) * gridCellSize, 2 * gridCellSize, 2 * gridCellSize);
+
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+
+        ctxStage.fillStyle = '#000';
+        ctxStage.shadowColor = '#000';
+        if (settings.isHq) {
+            ctxStage.shadowBlur = 10;
+        }
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+    }
+
+    function prerenderTimer() {
+        ctxTimer.clearRect(0, 0, 150, 50);
+
+        ctxTimer.strokeStyle = '#ce36ff';
+        ctxTimer.lineWidth = 2;
+        if (settings.isHq) {
+            ctxTimer.shadowBlur = 10;
+            ctxTimer.shadowColor = '#ce36ff';
+        }
+        ctxTimer.lineWidth = 1;
+        ctxTimer.font = '50px monospace';
+        ctxTimer.textBaseline = 'top';
+        ctxTimer.textAlign = 'left';
+
+        const diff = (5 * 60 * 1000) - (Date.now() - gameState.levelTimerStart);
+        const seconds = (fl(diff / 1000) % 60).toString().padStart(2, '0');
+        const minutes = fl(diff / 1000 / 60);
+
+        ctxTimer.strokeText(`${minutes}:${seconds}`, 0, 0);
     }
 
     function prerenderStage() {
@@ -1431,15 +1534,16 @@
         }
         ctxStage.shadowColor = '#c200b4';
 
+        // visited path
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
             if (point.isObstacle) {
                 drawWall(x, y, gridCellSize, '#c200b4', '#620056');
-            } else if (point.visited) {
+            } else if (point.isVisited) {
                 drawWall(x, y, gridCellSize, '#00b8c211', '#00b8c211');
             }
         });
 
-
+        // path to the end
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
             if (x === grid.endPoint.x && y === grid.endPoint.y) {
                 drawWall(x, y, gridCellSize, '#fa0e00', '#0000');
@@ -1450,36 +1554,20 @@
             }
         });
 
+        // locks
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
             if (point.special) {
                 drawWall(x, y, gridCellSize, '#fa000a', '#9196b8');
             }
         });
 
-
+        // player
         ctxStage.shadowColor = '#0ca8df';
         ctxStage.fillRect((player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
         ctxStage.drawImage(imageSpace, (player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
 
-        loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
-            if (point.visited) {
-                ctxDarkness.clearRect((x - 0.5) * gridCellSize, (y - 0.5) * gridCellSize, 2 * gridCellSize, 2 * gridCellSize);
-                ctxDarkness.clearRect((x - 1) * gridCellSize, (y) * gridCellSize, 3 * gridCellSize, gridCellSize);
-                ctxDarkness.clearRect((x) * gridCellSize, (y - 1) * gridCellSize, gridCellSize, 3 * gridCellSize);
-            }
-        });
-
-        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
-
-        ctxStage.fillStyle = '#000';
-        ctxStage.shadowColor = '#000';
-        if (settings.isHq) {
-            ctxStage.shadowBlur = 10;
-        }
-        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
-        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
-        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
-        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
+        // fog of war
+        prerenderDarkness();
 
         ctxStage.restore();
     }
