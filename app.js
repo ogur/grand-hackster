@@ -283,7 +283,7 @@
             for (let i = 0; lockPlaced < 5 && i < 400; i++) {
                 const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
                 if (!point.isObstacle && !point.isEnd && !point.isStart && point.isRightPath && this.isDoorSpace(point.x, point.y)) {
-                    point.special = {type: 'lock', pattern: generateGoal(lockPlaced + 1), level: lockPlaced + 1};
+                    point.special = {type: 'LOCK', pattern: generateGoal(lockPlaced + 1), level: lockPlaced + 1};
                     point.isObstacle = true;
                     lockPlaced++;
                 }
@@ -396,6 +396,10 @@
         levelTimerStart: null,
         scoreList: [],
         mainGoalComplete: false,
+        timeForLevel: 5 * 60 * 1000,
+        levelFinishTime: null,
+        loopStartTime: 0,
+        missionCounter: 0,
     };
 
     const player = {
@@ -473,6 +477,7 @@
 
         updateCache();
         requestAnimationFrame(loop);
+        gameState.loopStartTime = Date.now();
     }
 
     function initMission() {
@@ -483,6 +488,12 @@
         lastTimestampLevelTimer = 0;
         gameState.levelTimerStart = Date.now();
         gameState.mainGoalComplete = false;
+        gameState.areasReign = [
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
+        ];
+        gameState.missionCounter++;
 
         grid.generateStage();
 
@@ -497,7 +508,15 @@
     }
 
     function finishMission() {
-        console.log(`good job`);
+        gameState.levelFinishTime = Date.now();
+        let remainingTimeDiff = gameState.timeForLevel - (gameState.levelFinishTime - gameState.levelTimerStart);
+
+        remainingTimeDiff = Math.max(0, remainingTimeDiff);
+
+        addToScore({
+            label: `REMAINING TIME ${formatTime(remainingTimeDiff)}`,
+            points: fl(remainingTimeDiff / 1000),
+        });
     }
 
 
@@ -654,8 +673,18 @@
             }
         }
 
+        if (gameState.phase === 'SUCCESS') {
+            if (gameState.levelFinishTime + 2 * 1000 < Date.now()) {
+                initMission();
+                gameState.phase = 'GAME';
+            }
+        }
+
         if (gameState.phase === 'GAMEOVER') {
-            gameState.phase = 'INTRO';
+            if (gameState.levelFinishTime + 2 * 1000 < Date.now()) {
+                gameState.scoreList = [];
+                gameState.phase = 'INTRO';
+            }
         }
     }
 
@@ -902,20 +931,32 @@
 
 
     function moveHandler(x, y, boundaryCond) {
-        if (grid.stage[y][x].special) {
+        if (!boundaryCond) {
+            return false;
+        }
+        if (!gameState.mainGoalComplete && grid.startPoint.x === x && grid.startPoint.y === y) {
+            // cannot end
+        } else if (grid.stage[y][x].special && grid.stage[y][x].special.type === 'LOCK') {
             switchToGoal(grid.stage[y][x])
-        } else if (boundaryCond && !grid.stage[y][x].isObstacle) {
+        } else if (!grid.stage[y][x].isObstacle) {
             switchToGoal(null);
             player.x = x;
             player.y = y;
+            if (!grid.stage[y][x].isVisited) {
+                addToScore({
+                    label: 'LEVEL EXPLORATION',
+                    points: 2,
+                });
+            }
             grid.stage[y][x].isVisited = true;
+
 
             if (grid.endPoint.x === x && grid.endPoint.y === y) {
                 gameState.mainGoalComplete = true;
             }
 
-            if (grid.startPoint.x === x && grid.startPoint.y === y) {
-                gameState.phase = 'FINISHED';
+            if (gameState.mainGoalComplete && grid.startPoint.x === x && grid.startPoint.y === y) {
+                gameState.phase = 'SUCCESS';
                 return finishMission();
             }
 
@@ -988,6 +1029,12 @@
 
         if (gameState.phase === 'GAMEOVER') {
             drawGameOverScreen(timestamp);
+            drawSummaryScreen(timestamp);
+        }
+
+        if (gameState.phase === 'SUCCESS') {
+            drawWinMissionScreen(timestamp);
+            drawSummaryScreen(timestamp);
         }
 
         if (settings.isHq) {
@@ -1042,6 +1089,89 @@
         ctxMain.restore();
     }
 
+    function drawWinMissionScreen(timestamp) {
+
+        ctxSec.save();
+        ctxSec.textAlign = 'center';
+        ctxSec.font = '130px monospace';
+        ctxSec.textBaseline = 'middle';
+        ctxSec.fillStyle = '#03d626';
+        ctxSec.shadowColor = '#03d626';
+        ctxSec.globalAlpha = 1 - Math.sin((Math.PI / 180) * ((timestamp / 5) % 360));
+
+        if (settings.isHq) {
+            ctxSec.shadowBlur = 10;
+        }
+        ctxSec.fillText('SUCCESS', SEC_AREA.width / 2, SEC_AREA.height / 2);
+        ctxSec.fillText('SUCCESS', SEC_AREA.width / 2, SEC_AREA.height / 2);
+        ctxSec.fillText('SUCCESS', SEC_AREA.width / 2, SEC_AREA.height / 2);
+        ctxSec.restore();
+    }
+
+    function drawSummaryScreen(timestamp) {
+        ctxMain.save();
+        ctxMain.textAlign = 'left';
+        ctxMain.textBaseline = 'middle';
+        ctxMain.fillStyle = '#03d626';
+        ctxMain.shadowColor = '#03d626';
+
+        if (settings.isHq) {
+            ctxMain.shadowBlur = 2;
+        }
+
+        ctxMain.font = '25px monospace';
+        ctxMain.fillText(
+            `YOUR SCORE: ${getCurrentScore()}`,
+            MAIN_AREA.left + 50,
+            MAIN_AREA.top + 50,
+        );
+
+        ctxMain.font = '15px monospace';
+
+        const scoreSummary = Object.values(gameState.scoreList.reduce((acc, line) => {
+            if (typeof acc[line.label] === 'undefined') {
+                acc[line.label] = {
+                    label: line.label,
+                    count: 0,
+                    points: 0,
+                };
+            }
+
+            acc[line.label].count++;
+            acc[line.label].points += line.points;
+
+            return acc;
+        }, {}));
+
+        ctxMain.fillText(
+            `${'TYPE'.padEnd(70, ' ')} ${'COUNT'.padStart(6, ' ')} ${'SUM'.padStart(10, ' ')}`,
+            MAIN_AREA.left + 50,
+            MAIN_AREA.top + 80,
+        );
+
+        ctxMain.fillText(
+            `${'------'.padEnd(70, ' ')} ${'------'.padStart(6, ' ')} ${'------'.padStart(10, ' ')}`,
+            MAIN_AREA.left + 50,
+            MAIN_AREA.top + 100,
+        );
+
+        for (let scoreIdx = 0; scoreIdx < scoreSummary.length; scoreIdx++) {
+            const line = scoreSummary[scoreIdx];
+            ctxMain.fillText(
+                `${line.label.padEnd(70, ' ')} ${line.count.toString().padStart(6, ' ')} ${line.points.toString().padStart(10, ' ')}`,
+                MAIN_AREA.left + 50,
+                MAIN_AREA.top + 120 + scoreIdx * 20,
+            );
+        }
+
+        if (gameState.levelFinishTime + 2 * 1000 < gameState.loopStartTime + timestamp) {
+            ctxMain.font = '25px monospace';
+            ctxMain.textAlign = 'center';
+            ctxMain.fillText(`PRESS ANY KEY TO CONTINUE`, MAIN_AREA.width / 2, MAIN_AREA.height - 40);
+        }
+
+        ctxMain.restore();
+    }
 
     function drawGameOverScreen(timestamp) {
         ctxSec.save();
@@ -1644,24 +1774,29 @@
         ctxTimer.textBaseline = 'top';
         ctxTimer.textAlign = 'left';
 
-        let diff = (5 * 60 * 1000) - (Date.now() - gameState.levelTimerStart);
+        let diff = gameState.timeForLevel - (Date.now() - gameState.levelTimerStart);
 
         if (diff < 0) {
             diff = 0;
         }
 
-        const seconds = (fl(diff / 1000) % 60).toString().padStart(2, '0');
-        const minutes = fl(diff / 1000 / 60);
-
         ctxTimer.strokeText(`TIME`, 0, 0);
-        ctxTimer.strokeText(`${minutes}:${seconds}`, 0, 50);
+        ctxTimer.strokeText(formatTime(diff), 0, 50);
 
         ctxTimer.fillText(`TIME`, 0, 0);
-        ctxTimer.fillText(`${minutes}:${seconds}`, 0, 50);
+        ctxTimer.fillText(formatTime(diff), 0, 50);
 
         if (diff === 0) {
             gameState.phase = 'GAMEOVER';
+            finishMission();
         }
+    }
+
+    function formatTime(diff) {
+        const seconds = (fl(diff / 1000) % 60).toString().padStart(2, '0');
+        const minutes = fl(diff / 1000 / 60);
+
+        return `${minutes}:${seconds}`;
     }
 
     function prerenderScore() {
@@ -1679,15 +1814,19 @@
         ctxScore.textBaseline = 'top';
         ctxScore.textAlign = 'left';
 
-        const score = gameState.scoreList.reduce((sum, item) => {
-            return sum + item.points;
-        }, 0);
+        const score = getCurrentScore();
 
         ctxScore.strokeText(`LOOT`, 0, 0);
         ctxScore.strokeText(score, 0, 50);
 
         ctxScore.fillText(`LOOT`, 0, 0);
         ctxScore.fillText(score, 0, 50);
+    }
+
+    function getCurrentScore() {
+        return gameState.scoreList.reduce((sum, item) => {
+            return sum + item.points;
+        }, 0);
     }
 
 
