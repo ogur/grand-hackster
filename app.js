@@ -56,32 +56,32 @@
     };
 
     const keys = {
-        'q': {name: 'q', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 0, groupCol: 0},
-        'w': {name: 'w', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 1, groupCol: 0},
-        'e': {name: 'e', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 2, groupCol: 0},
-        'r': {name: 'r', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 3, groupCol: 1},
-        't': {name: 't', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 4, groupCol: 1},
-        'y': {name: 'y', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 5, groupCol: 1},
-        'u': {name: 'u', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 6, groupCol: 1},
-        'i': {name: 'i', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 7, groupCol: 2},
-        'o': {name: 'o', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 8, groupCol: 2},
-        'p': {name: 'p', heat: 0, isDestroyed: false, isPushed: false, groupRow: 0, pos: 9, groupCol: 2},
-        'a': {name: 'a', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 0, groupCol: 0},
-        's': {name: 's', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 1, groupCol: 0},
-        'd': {name: 'd', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 2, groupCol: 0},
-        'f': {name: 'f', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 3, groupCol: 1},
-        'g': {name: 'g', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 4, groupCol: 1},
-        'h': {name: 'h', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 5, groupCol: 1},
-        'j': {name: 'j', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 6, groupCol: 2},
-        'k': {name: 'k', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 7, groupCol: 2},
-        'l': {name: 'l', heat: 0, isDestroyed: false, isPushed: false, groupRow: 1, pos: 8, groupCol: 2},
-        'z': {name: 'z', heat: 0, isDestroyed: false, isPushed: false, groupRow: 2, pos: 0, groupCol: 0},
-        'x': {name: 'x', heat: 0, isDestroyed: false, isPushed: false, groupRow: 2, pos: 1, groupCol: 0},
-        'c': {name: 'c', heat: 0, isDestroyed: false, isPushed: false, groupRow: 2, pos: 2, groupCol: 0},
-        'v': {name: 'v', heat: 0, isDestroyed: false, isPushed: false, groupRow: 2, pos: 3, groupCol: 1},
-        'b': {name: 'b', heat: 0, isDestroyed: false, isPushed: false, groupRow: 2, pos: 4, groupCol: 1},
-        'n': {name: 'n', heat: 0, isDestroyed: false, isPushed: false, groupRow: 2, pos: 5, groupCol: 2},
-        'm': {name: 'm', heat: 0, isDestroyed: false, isPushed: false, groupRow: 2, pos: 6, groupCol: 2},
+        'q': {name: 'q', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 0, x: 0},
+        'w': {name: 'w', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 1, x: 0, alt: '⇧'},
+        'e': {name: 'e', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 2, x: 0},
+        'r': {name: 'r', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 3, x: 1},
+        't': {name: 't', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 4, x: 1},
+        'y': {name: 'y', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 5, x: 1},
+        'u': {name: 'u', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 6, x: 1},
+        'i': {name: 'i', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 7, x: 2, alt: '⇧'},
+        'o': {name: 'o', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 8, x: 2},
+        'p': {name: 'p', heat: 0, isDestroyed: false, isPushed: false, y: 0, pos: 9, x: 2},
+        'a': {name: 'a', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 0, x: 0, alt: '⇦'},
+        's': {name: 's', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 1, x: 0, alt: '⇩'},
+        'd': {name: 'd', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 2, x: 0, alt: '⇨'},
+        'f': {name: 'f', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 3, x: 1},
+        'g': {name: 'g', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 4, x: 1},
+        'h': {name: 'h', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 5, x: 1},
+        'j': {name: 'j', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 6, x: 2, alt: '⇦'},
+        'k': {name: 'k', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 7, x: 2, alt: '⇩'},
+        'l': {name: 'l', heat: 0, isDestroyed: false, isPushed: false, y: 1, pos: 8, x: 2, alt: '⇨'},
+        'z': {name: 'z', heat: 0, isDestroyed: false, isPushed: false, y: 2, pos: 0, x: 0},
+        'x': {name: 'x', heat: 0, isDestroyed: false, isPushed: false, y: 2, pos: 1, x: 0},
+        'c': {name: 'c', heat: 0, isDestroyed: false, isPushed: false, y: 2, pos: 2, x: 0},
+        'v': {name: 'v', heat: 0, isDestroyed: false, isPushed: false, y: 2, pos: 3, x: 1},
+        'b': {name: 'b', heat: 0, isDestroyed: false, isPushed: false, y: 2, pos: 4, x: 1},
+        'n': {name: 'n', heat: 0, isDestroyed: false, isPushed: false, y: 2, pos: 5, x: 2},
+        'm': {name: 'm', heat: 0, isDestroyed: false, isPushed: false, y: 2, pos: 6, x: 2},
     };
 
     const RACES = {
@@ -123,10 +123,25 @@
         },
     };
 
+    const ctxMain = document.querySelector('#mainArea').getContext('2d');
+    const ctxSec = document.querySelector('#secArea').getContext('2d');
+    const ctxConsole = createCrx(CONSOLE.width, CONSOLE.height);
+    const ctxLogo = createCrx(SEC_AREA.width, SEC_AREA.height);
+    const ctxKeyboard = createCrx(KEYBOARD.width, KEYBOARD.height);
+    const ctxStage = createCrx(SEC_AREA.width, SEC_AREA.height);
+    const ctxDarknessBase = createCrx(SEC_AREA.width, SEC_AREA.height);
+    const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
+    const ctxScore = createCrx(150, 100);
+    const ctxTimer = createCrx(150, 100);
+    const ctxPadlock = createCrx(240, 135);
+
+    const imageSpace = document.querySelector('#sourceSpace');
+    const imageAbout = document.querySelector('#sourceAbout');
+
     const appScriptUrl = document.querySelector('#app').src;
 
-    let isSwitchingEnabled = false;
-    const selectedArea = {row: null, col: null};
+    let isModifierPressed = false;
+    const selectedArea = {y: null, x: null};
 
     class Grid {
         constructor(stageCellSize) {
@@ -257,7 +272,7 @@
             } while (pointsAroundEndList.length > 0);
 
             // placing additional walls
-            loop2d(this.stage, this.side, this.side, (point, x, y) => {
+            loop2d(this.stage, this.side, this.side, (point) => {
                 if (!point.isObstacle && point.dist === null) {
                     point.isObstacle = true;
                 }
@@ -268,7 +283,7 @@
             for (let i = 0; lockPlaced < 5 && i < 400; i++) {
                 const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
                 if (!point.isObstacle && !point.isEnd && !point.isStart && point.isRightPath && this.isDoorSpace(point.x, point.y)) {
-                    point.special = {type: 'lock', pattern: generateGoal(lockPlaced + 1)};
+                    point.special = {type: 'lock', pattern: generateGoal(lockPlaced + 1), level: lockPlaced + 1};
                     point.isObstacle = true;
                     lockPlaced++;
                 }
@@ -278,12 +293,12 @@
         isStageObstacle(x, y) {
             return !(
                 (
-                    y % 2 === 1 // odd row without first and last col
+                    y % 2 === 1
                     && x !== 0
                     && x !== this.side - 1
                 ) ||
                 (
-                    x % 2 === 1 // odd col without first and last row
+                    x % 2 === 1
                     && y !== 0
                     && y !== this.side - 1
                 ));
@@ -344,187 +359,9 @@
         }
     }
 
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxMain = document.querySelector('#mainArea').getContext('2d');
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxSec = document.querySelector('#secArea').getContext('2d');
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxConsole = createCrx(CONSOLE.width, CONSOLE.height);
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxLogo = createCrx(SEC_AREA.width, SEC_AREA.height);
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxKeyboard = createCrx(KEYBOARD.width, KEYBOARD.height);
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxStage = createCrx(SEC_AREA.width, SEC_AREA.height);
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxDarknessBase = createCrx(SEC_AREA.width, SEC_AREA.height);
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
-    /**
-     * @type {CanvasRenderingContext2D | WebGLRenderingContext}
-     */
-    const ctxTimer = createCrx(150, 50);
+    document.addEventListener('keydown', keyDownHandler);
 
-    const imageSpace = document.querySelector('#sourceSpace');
-    const imageAbout = document.querySelector('#sourceAbout');
-
-    document.addEventListener('keydown', (event) => {
-        if (!['f5', 'f11', 'f12'].includes(event.key.toLocaleLowerCase())) {
-            event.preventDefault();
-        }
-
-        if (event.key === '=') {
-            settings.isHq = !settings.isHq;
-            updateCache();
-        }
-
-        if (gameState.stage === 'INTRO') {
-            console.info(`event.key`, event.key);
-            if (event.key.toLowerCase() === 'arrowdown') {
-                systemMenu.selectedItem = (systemMenu.selectedItem + 1) % systemMenu.list.length;
-            } else if (event.key.toLowerCase() === 'arrowup') {
-                systemMenu.selectedItem = (systemMenu.list.length + systemMenu.selectedItem - 1) % systemMenu.list.length;
-            } else if (event.key.toLowerCase() === 'enter') {
-                if (systemMenu.selectedItem === 0) {
-                    gameState.stage = 'GAME';
-                } else if (systemMenu.selectedItem === 2) {
-                    gameState.stage = 'ABOUT';
-                }
-            }
-            return;
-        }
-
-        if (gameState.stage === 'ABOUT') {
-            gameState.stage = 'INTRO';
-        }
-
-        if (gameState.stage === 'GAME') {
-            if (event.key.toLowerCase() === 'arrowdown') {
-                moveHandler(player.x, player.y + 1, player.y + 1 < grid.side);
-                return;
-            }
-
-            if (event.key.toLowerCase() === 'arrowup') {
-                moveHandler(player.x, player.y - 1, player.y - 1 >= 0);
-                return;
-            }
-
-            if (event.key.toLowerCase() === 'arrowright') {
-                moveHandler(player.x + 1, player.y, player.x + 1 < grid.side);
-                return;
-            }
-
-            if (event.key.toLowerCase() === 'arrowleft') {
-                moveHandler(player.x - 1, player.y, player.x - 1 >= 0);
-                return;
-            }
-
-            if (event.key.toLowerCase() === 'enter') {
-                if (gameState.currentGoal) {
-                    let isComplete = true;
-
-                    loop2d(gameState.currentGoal.special.pattern, 3, 3, (val, x, y) => {
-                        if (val && gameState.areasReign[y][x] !== 'HUMAN') {
-                            isComplete = false;
-                        }
-                    });
-
-                    if (isComplete) {
-                        gameState.currentGoal.isObstacle = false;
-                        gameState.currentGoal.special = null;
-                        gameState.currentGoal = null;
-
-                        prerenderStage();
-                    } else {
-                        playWrongKey();
-                    }
-                }
-            }
-
-            if (event.key === ' ') {
-                isSwitchingEnabled = true;
-                if (event.ctrlKey || event.shiftKey) {
-                    selectedArea.row = null;
-                    selectedArea.col = null;
-                }
-                return;
-            }
-
-            if (event.repeat) {
-                return;
-            }
-            const keyName = event.key.toLowerCase();
-            const key = keys[keyName];
-
-            if (key && isSwitchingEnabled) {
-                selectedArea.col = key.groupCol;
-                selectedArea.row = key.groupRow;
-                return;
-            }
-
-            if (key && !key.isDestroyed) {
-                key.isPushed = true;
-                clearKey(key);
-                drawKey(key);
-
-                key.heat = Math.min(key.heat + 1, HEAT.max);
-                if (key.heat === HEAT.max) {
-                    key.isDestroyed = true;
-                }
-
-                const targetRow = selectedArea.row !== null ? selectedArea.row : key.groupRow;
-                const targetCol = selectedArea.col !== null ? selectedArea.col : key.groupCol;
-
-                const degree = fl(key.heat / 6) + 1;
-                for (let keyRep = 0; keyRep < degree; keyRep++) {
-                    for (let cellIdx = 0; cellIdx < CONSOLE.areaLimit; cellIdx++) {
-                        const targetCellRow = targetRow * CONSOLE.lineRows3 + fl(cellIdx / CONSOLE.lineCols3);
-                        const targetCellColOffset = targetCol * CONSOLE.lineCols3;
-                        const targetCellIdx = targetCellRow * CONSOLE.lineCols + targetCellColOffset + cellIdx % CONSOLE.lineCols3;
-
-                        if (!consoleArea[targetCellIdx] || consoleArea[targetCellIdx].race !== 'HUMAN') {
-                            consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx]};
-                            writeHumanAction(targetCellIdx);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    document.addEventListener('keyup', (event) => {
-        if (event.key === ' ') {
-            isSwitchingEnabled = false;
-            return;
-        }
-
-        const keyName = event.key.toLowerCase();
-        const key = keys[keyName];
-
-        if (key) {
-            key.isPushed = false;
-
-            clearKey(key);
-            drawKey(key);
-        }
-    });
+    document.addEventListener('keyup', keyUpHandler);
 
     const consoleArea = [];
     const consoleHumanData = [];
@@ -547,7 +384,7 @@
         isHq: true,
     };
     const gameState = {
-        stage: 'GAME',
+        phase: 'INTRO',
         currentGoal: null,
         areasReign: [
             ['', '', ''],
@@ -557,6 +394,8 @@
         currentEnemyPosition: null,
         levelEnemyPosition: null,
         levelTimerStart: null,
+        scoreList: [],
+        mainGoalComplete: false,
     };
 
     const player = {
@@ -566,6 +405,8 @@
 
     let stageCellSize;
     let grid;
+
+    let stageBgPath;
 
     const ownCode = await fetch(appScriptUrl)
         .then(x => x.text())
@@ -598,7 +439,7 @@
     }
 
     function chunk(input, chunkLen) {
-        output = [];
+        let output = [];
         while (input.length) {
             output.push(input.slice(0, chunkLen));
             input = input.slice(chunkLen);
@@ -626,29 +467,215 @@
     function init() {
         stageCellSize = 4;
         grid = new Grid(stageCellSize);
+
+        createDarkness();
+        createPadlock();
+
+        updateCache();
+        requestAnimationFrame(loop);
+    }
+
+    function initMission() {
+        lastTimestampHeat = 0;
+        lastTimestampEnemy = 0;
+        lastTimestampAreaReign = 0;
+        lastTimestampEnemyGoal = 0;
+        lastTimestampLevelTimer = 0;
+        gameState.levelTimerStart = Date.now();
+        gameState.mainGoalComplete = false;
+
         grid.generateStage();
 
         player.x = grid.startPoint.x;
         player.y = grid.startPoint.y;
         grid.stage[grid.startPoint.y][grid.startPoint.x].isVisited = true;
 
-        console.info(`stage`, grid.stage);
-
-        gameState.levelTimerStart = Date.now();
         gameState.levelEnemyPosition = Object.keys(RACES).sort(() => 0.5 - rnd());
         gameState.currentEnemyPosition = generateEnemyPosition(6);
 
-        createDarkness();
-
-        updateCache();
-        requestAnimationFrame(loop);
+        renderStage();
     }
+
+    function finishMission() {
+        console.log(`good job`);
+    }
+
 
     function loop(timestamp) {
         main(timestamp);
         draw(timestamp);
 
         requestAnimationFrame(loop);
+    }
+
+    function keyDownHandler(event) {
+        const keyName = event.key.toLowerCase();
+        if (!['f5', 'f11', 'f12'].includes(keyName)) {
+            event.preventDefault();
+        }
+
+        if (keyName === '=') {
+            settings.isHq = !settings.isHq;
+            updateCache();
+        }
+
+        if (gameState.phase === 'INTRO') {
+            if (keyName === 'arrowdown' || keyName === 's') {
+                systemMenu.selectedItem = (systemMenu.selectedItem + 1) % systemMenu.list.length;
+            } else if (keyName === 'arrowup' || keyName === 'w') {
+                systemMenu.selectedItem = (systemMenu.list.length + systemMenu.selectedItem - 1) % systemMenu.list.length;
+            } else if (keyName === ' ') {
+                if (systemMenu.selectedItem === 0) {
+                    initMission();
+                    gameState.phase = 'GAME';
+                } else if (systemMenu.selectedItem === 2) {
+                    gameState.phase = 'ABOUT';
+                }
+            }
+            return;
+        }
+
+        if (gameState.phase === 'ABOUT') {
+            gameState.phase = 'INTRO';
+        }
+
+        if (gameState.phase === 'GAME') {
+            if (keyName === 'shift' && !event.repeat) {
+                isModifierPressed = true;
+                prerenderKeyboard();
+            }
+
+            if (keyName === 'arrowdown' || (keyName === 's' && event.shiftKey)) {
+                moveHandler(player.x, player.y + 1, player.y + 1 < grid.side);
+                return;
+            }
+
+            if (keyName === 'arrowup' || (keyName === 'w' && event.shiftKey)) {
+                moveHandler(player.x, player.y - 1, player.y - 1 >= 0);
+                return;
+            }
+
+            if (keyName === 'arrowright' || (keyName === 'd' && event.shiftKey)) {
+                moveHandler(player.x + 1, player.y, player.x + 1 < grid.side);
+                return;
+            }
+
+            if (keyName === 'arrowleft' || (keyName === 'a' && event.shiftKey)) {
+                moveHandler(player.x - 1, player.y, player.x - 1 >= 0);
+                return;
+            }
+
+
+            if (keyName === 'k' && event.shiftKey) {
+                switchAreaHandler(selectedArea.x, selectedArea.y + 1, selectedArea.y + 1 < 3, {x: 1, y: 2});
+                return;
+            }
+
+            if (keyName === 'i' && event.shiftKey) {
+                switchAreaHandler(selectedArea.x, selectedArea.y - 1, selectedArea.y - 1 >= 0, {x: 1, y: 0});
+                return;
+            }
+
+            if (keyName === 'l' && event.shiftKey) {
+                switchAreaHandler(selectedArea.x + 1, selectedArea.y, selectedArea.x + 1 < 3, {x: 2, y: 1});
+                return;
+            }
+
+            if (keyName === 'j' && event.shiftKey) {
+                switchAreaHandler(selectedArea.x - 1, selectedArea.y, selectedArea.x - 1 >= 0, {x: 0, y: 1});
+                return;
+            }
+
+
+            if (keyName === ' ') {
+                if (event.shiftKey) {
+                    selectedArea.y = null;
+                    selectedArea.x = null;
+                } else if (gameState.currentGoal) {
+                    let isComplete = true;
+
+                    loop2d(gameState.currentGoal.special.pattern, 3, 3, (val, x, y) => {
+                        if (val && gameState.areasReign[y][x] !== 'HUMAN') {
+                            isComplete = false;
+                        }
+                    });
+
+                    if (isComplete) {
+                        addToScore({
+                            label: `LOCK LVL ${gameState.currentGoal.special.level}`,
+                            points: gameState.currentGoal.special.level * 50,
+                        });
+                        gameState.currentGoal.isObstacle = false;
+                        gameState.currentGoal.special = null;
+                        gameState.currentGoal = null;
+
+                        renderStage();
+                        playOpenLock();
+                    } else {
+                        playWrongKey();
+                    }
+
+                    return;
+                }
+            }
+
+            if (event.repeat) {
+                return;
+            }
+            const key = keys[keyName];
+
+            if (key && !key.isDestroyed) {
+                key.isPushed = true;
+                clearKey(key);
+                drawKey(key);
+
+                key.heat = Math.min(key.heat + 1, HEAT.max);
+                if (key.heat === HEAT.max) {
+                    key.isDestroyed = true;
+                }
+
+                const targetRow = selectedArea.y !== null ? selectedArea.y : key.y;
+                const targetCol = selectedArea.x !== null ? selectedArea.x : key.x;
+
+                const degree = fl(key.heat / 6) * 2 + 1;
+                for (let keyRep = 0; keyRep < degree; keyRep++) {
+                    for (let cellIdx = 0; cellIdx < CONSOLE.areaLimit; cellIdx++) {
+                        const targetCellRow = targetRow * CONSOLE.lineRows3 + fl(cellIdx / CONSOLE.lineCols3);
+                        const targetCellColOffset = targetCol * CONSOLE.lineCols3;
+                        const targetCellIdx = targetCellRow * CONSOLE.lineCols + targetCellColOffset + cellIdx % CONSOLE.lineCols3;
+
+                        if (!consoleArea[targetCellIdx] || consoleArea[targetCellIdx].race !== 'HUMAN') {
+                            consoleArea[targetCellIdx] = {...consoleHumanData[targetCellIdx]};
+                            writeHumanAction(targetCellIdx);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (gameState.phase === 'GAMEOVER') {
+            gameState.phase = 'INTRO';
+        }
+    }
+
+    function keyUpHandler(event) {
+        const keyName = event.key.toLowerCase();
+
+        if (keyName === 'shift') {
+            isModifierPressed = false;
+            prerenderKeyboard();
+            return;
+        }
+
+        const key = keys[keyName];
+
+        if (key) {
+            key.isPushed = false;
+
+            clearKey(key);
+            drawKey(key);
+        }
     }
 
 
@@ -687,8 +714,6 @@
     }
 
     function writeConsole(area, race) {
-        groupIdx = fl(rnd() * 3);
-
         const selectedAreaRow = fl(area / 3);
         const selectedAreaCol = area % 3;
 
@@ -766,7 +791,7 @@
 
 
     function main(timestamp) {
-        if (gameState.stage === 'GAME') {
+        if (gameState.phase === 'GAME') {
             levelTimer(timestamp);
 
             enemyGoalChange(timestamp);
@@ -778,13 +803,13 @@
     }
 
 
-
     function levelTimer(timestamp) {
         const levelTimerInterval = 210;
         if (timestamp - lastTimestampLevelTimer > levelTimerInterval) {
             lastTimestampLevelTimer = fl(timestamp / levelTimerInterval) * levelTimerInterval;
 
             prerenderTimer();
+            prerenderScore();
         }
     }
 
@@ -803,7 +828,7 @@
     }
 
     function enemyActivity(timestamp) {
-        const enemyInterval = 25;
+        const enemyInterval = 15;
         if (timestamp - lastTimestampEnemy > enemyInterval) {
             lastTimestampEnemy = fl(timestamp / enemyInterval) * enemyInterval;
 
@@ -821,7 +846,7 @@
 
             if (point.isVisited && rnd() > 0.95) {
                 point.isVisited = false;
-                prerenderStage();
+                renderStage();
             }
         }
     }
@@ -885,7 +910,26 @@
             player.y = y;
             grid.stage[y][x].isVisited = true;
 
-            prerenderStage();
+            if (grid.endPoint.x === x && grid.endPoint.y === y) {
+                gameState.mainGoalComplete = true;
+            }
+
+            if (grid.startPoint.x === x && grid.startPoint.y === y) {
+                gameState.phase = 'FINISHED';
+                return finishMission();
+            }
+
+            renderStage();
+        }
+    }
+
+    function switchAreaHandler(x, y, boundaryCond, defaultPos) {
+        if (x === null || y === null) {
+            selectedArea.x = defaultPos.x;
+            selectedArea.y = defaultPos.y;
+        } else if (boundaryCond) {
+            selectedArea.x = x;
+            selectedArea.y = y;
         }
     }
 
@@ -922,19 +966,16 @@
         ctxSec.fillStyle = COLOR.bg;
         ctxSec.fillRect(SEC_AREA.left, SEC_AREA.top, SEC_AREA.width, SEC_AREA.height);
 
-        if (gameState.stage === 'INTRO') { // @todo remove
+        if (gameState.phase === 'INTRO') {
             drawLogo(timestamp);
-        }
-
-        if (gameState.stage === 'INTRO') {
             drawMenu(timestamp);
         }
 
-        if (gameState.stage === 'ABOUT') {
+        if (gameState.phase === 'ABOUT') {
             drawAbout(timestamp);
         }
 
-        if (gameState.stage === 'GAME') {
+        if (gameState.phase === 'GAME') {
             drawKeyboard(timestamp);
 
             drawConsole(timestamp);
@@ -945,17 +986,21 @@
 
         }
 
+        if (gameState.phase === 'GAMEOVER') {
+            drawGameOverScreen(timestamp);
+        }
+
         if (settings.isHq) {
             drawScanlines(timestamp);
         }
     }
 
-    function drawMenu(timestamp) {
+    function drawMenu() {
         ctxMain.save();
         ctxMain.fillStyle = '#ff3690';
         if (settings.isHq) {
             ctxMain.shadowBlur = 5;
-            ctxMain.shadowColor = '#ffa4c6';
+            ctxMain.shadowColor = '#c30045';
         }
         ctxMain.textAlign = 'center';
         ctxMain.font = '80px monospace';
@@ -977,7 +1022,7 @@
         ctxMain.restore();
     }
 
-    function drawAbout(timestamp) {
+    function drawAbout() {
         ctxMain.save();
 
         ctxMain.drawImage(imageAbout, 235, 300, 120, 160);
@@ -995,6 +1040,25 @@
 
 
         ctxMain.restore();
+    }
+
+
+    function drawGameOverScreen(timestamp) {
+        ctxSec.save();
+        ctxSec.textAlign = 'center';
+        ctxSec.font = '130px monospace';
+        ctxSec.textBaseline = 'middle';
+        ctxSec.fillStyle = '#f00';
+        ctxSec.shadowColor = '#f00';
+        ctxSec.globalAlpha = 1 - Math.sin((Math.PI / 180) * ((timestamp / 5) % 360));
+
+        if (settings.isHq) {
+            ctxSec.shadowBlur = 10;
+        }
+        ctxSec.fillText('GAME OVER', SEC_AREA.width / 2, SEC_AREA.height / 2);
+        ctxSec.fillText('GAME OVER', SEC_AREA.width / 2, SEC_AREA.height / 2);
+        ctxSec.fillText('GAME OVER', SEC_AREA.width / 2, SEC_AREA.height / 2);
+        ctxSec.restore();
     }
 
 
@@ -1022,19 +1086,22 @@
     }
 
     function clearKey(key) {
-        const x = 10 + key.pos * KEYBOARD.keySize + key.groupRow * 50;
-        const y = 10 + key.groupRow * KEYBOARD.keySize;
+        const x = 10 + key.pos * KEYBOARD.keySize + key.y * 50;
+        const y = 10 + key.y * KEYBOARD.keySize;
 
         ctxKeyboard.clearRect(x, y, 100, 100);
     }
 
     function drawKey(key) {
-        const x = 20 + key.pos * KEYBOARD.keySize + key.groupRow * 50;
-        const y = 20 + key.groupRow * KEYBOARD.keySize;
+        const x = 20 + key.pos * KEYBOARD.keySize + key.y * 50;
+        const y = 20 + key.y * KEYBOARD.keySize;
         ctxKeyboard.save();
 
         // box
         ctxKeyboard.strokeStyle = getKeyStyle(key, {upState: '#ffc5f2'});
+        if (isModifierPressed && key.alt) {
+            ctxKeyboard.strokeStyle = '#00ef00'
+        }
         ctxKeyboard.lineWidth = 3;
         if (settings.isHq) {
             ctxKeyboard.shadowBlur = key.isPushed ? 1 : 5;
@@ -1071,7 +1138,15 @@
         ctxKeyboard.font = '70px monospace';
         ctxKeyboard.textBaseline = 'top';
         ctxKeyboard.textAlign = 'left';
-        ctxKeyboard.strokeText(key.name.toUpperCase(), x + 17, y + 7);
+        let textOffset = 17;
+        let char = key.name.toUpperCase();
+        if (isModifierPressed && key.alt) {
+            char = key.alt;
+            textOffset = 37;
+            ctxKeyboard.textAlign = 'center';
+            ctxKeyboard.strokeStyle = '#00ef00'
+        }
+        ctxKeyboard.strokeText(char, x + textOffset, y + 7);
         ctxKeyboard.restore();
     }
 
@@ -1167,7 +1242,7 @@
     }
 
 
-    function drawConsole(timestamp) {
+    function drawConsole() {
         ctxMain.save();
         // draw console bg
         ctxMain.fillStyle = '#222';
@@ -1176,20 +1251,6 @@
         }
         ctxMain.lineWidth = 3;
         ctxMain.fillRect(CONSOLE.left, CONSOLE.top, CONSOLE.width, CONSOLE.height);
-
-        // draw selected area bg
-        if (selectedArea.row !== null && selectedArea.col !== null) {
-            ctxMain.save();
-            ctxMain.strokeStyle = '#00a000';
-            ctxMain.shadowColor = '#00a000';
-            ctxMain.strokeRect(
-                CONSOLE.left + selectedArea.col * CONSOLE.width / 3 + 2,
-                CONSOLE.top + selectedArea.row * CONSOLE.height / 3 + 2,
-                CONSOLE.width / 3 - 4,
-                CONSOLE.height / 3 - 4,
-            );
-            ctxMain.restore();
-        }
 
         // area reign
         loop2d(gameState.areasReign, 3, 3, (val, x, y) => {
@@ -1212,25 +1273,47 @@
             }
         });
 
+        // draw selected area bg
+        if (selectedArea.y !== null && selectedArea.x !== null) {
+            ctxMain.save();
+            ctxMain.strokeStyle = '#00a000';
+            ctxMain.shadowColor = '#00a000';
+            ctxMain.strokeRect(
+                CONSOLE.left + selectedArea.x * CONSOLE.width / 3 + 2,
+                CONSOLE.top + selectedArea.y * CONSOLE.height / 3 + 2,
+                CONSOLE.width / 3 - 4,
+                CONSOLE.height / 3 - 4,
+            );
+            ctxMain.restore();
+        } else {
+            ctxMain.save();
+            ctxMain.strokeStyle = '#00a000';
+            ctxMain.shadowColor = '#00a000';
+            ctxMain.strokeRect(
+                CONSOLE.left + 2,
+                CONSOLE.top + 2,
+                CONSOLE.width - 4,
+                CONSOLE.height - 4,
+            );
+            ctxMain.restore();
+        }
+
         // current goal
         if (gameState.currentGoal) {
-            ctxMain.strokeStyle = '#6bc4ff';
-            ctxMain.shadowColor = '#6bc4ff';
-            ctxMain.lineWidth = 3;
-            for (const key in gameState.currentGoal.special.pattern) {
-                const pattern = gameState.currentGoal.special.pattern;
-
-                loop2d(pattern, 3, 3, (val, x, y) => {
+            ctxMain.save();
+            ctxMain.globalCompositeOperation = 'overlay';
+            for (const overlayLayer in gameState.currentGoal.special.pattern) {
+                loop2d(gameState.currentGoal.special.pattern, 3, 3, (val, x, y) => {
                     if (val) {
-                        ctxMain.strokeRect(
-                            CONSOLE.left + x * CONSOLE.width / 3 + 10,
-                            CONSOLE.top + y * CONSOLE.height / 3 + 10,
-                            CONSOLE.width / 3 - 20,
-                            CONSOLE.height / 3 - 20,
+                        ctxMain.drawImage(
+                            ctxPadlock.canvas,
+                            CONSOLE.left + x * CONSOLE.width / 3,
+                            CONSOLE.top + y * CONSOLE.height / 3,
                         );
                     }
                 });
             }
+            ctxMain.restore();
         }
         ctxMain.restore();
 
@@ -1238,7 +1321,7 @@
     }
 
 
-    function drawTransmission(timestamp) {
+    function drawTransmission() {
         ctxMain.save();
         ctxMain.fillStyle = '#1e336e';
         ctxMain.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
@@ -1259,6 +1342,44 @@
 
     function drawStage(timestamp) {
         const gridCellSize = 24;
+        const stageSide = grid.side * gridCellSize;
+        const stageBgPanel = (SEC_AREA.width - stageSide) * 0.5;
+
+        drawStageBg(timestamp, 0, 0, stageBgPanel, SEC_AREA.height);
+        drawStageBg(timestamp, stageSide + stageBgPanel, 0, stageBgPanel, SEC_AREA.height);
+
+
+        // main stage with glow
+        ctxSec.save();
+        ctxSec.fillStyle = '#000';
+        ctxSec.shadowColor = '#da00bf';
+        if (settings.isHq) {
+            ctxSec.shadowBlur = 10;
+        }
+        ctxSec.fillRect(
+            stageBgPanel,
+            (SEC_AREA.height - stageSide) * 0.5,
+            stageSide,
+            stageSide,
+        );
+        ctxSec.restore();
+
+        ctxSec.drawImage(ctxStage.canvas,
+            0, 0,
+            stageSide, stageSide,
+            stageBgPanel,
+            (SEC_AREA.height - stageSide) * 0.5,
+            stageSide, stageSide,
+        );
+
+        // timer
+        ctxSec.drawImage(ctxTimer.canvas, 10, 10);
+        // score
+        ctxSec.drawImage(ctxScore.canvas, 10 + stageSide + stageBgPanel, 10);
+    }
+
+    function drawStageBg(timestamp, x, y, width, height) {
+        const gridCellSize = 24;
 
         ctxSec.save();
         ctxSec.shadowColor = '#0f7aff';
@@ -1267,6 +1388,14 @@
         }
         ctxSec.strokeStyle = '#0f7aff';
         ctxSec.lineWidth = 1;
+
+        ctxSec.clip(new Path2D(`
+        M ${x} ${y}
+        h ${width}
+        v ${height}
+        h-${width}
+        v-${height}
+        `));
         ctxSec.stroke(stageBgPath);
 
         ctxSec.save();
@@ -1279,38 +1408,11 @@
         ctxSec.lineWidth = 5;
         ctxSec.globalCompositeOperation = 'overlay';
         ctxSec.setLineDash([5, 30 * gridCellSize]);
-        ctxSec.lineDashOffset = (timestamp / 8) % (30 * gridCellSize + 5);
+        ctxSec.lineDashOffset = (timestamp / 16) % (30 * gridCellSize + 5);
+
         ctxSec.stroke(stageBgPath);
         ctxSec.restore();
-
-        const stageSide = grid.side * gridCellSize;
-
-        ctxSec.save();
-        ctxSec.fillStyle = '#000';
-        ctxSec.shadowColor = '#da00bf';
-        if (settings.isHq) {
-            ctxSec.shadowBlur = 10;
-        }
-        ctxSec.fillRect(
-            (SEC_AREA.width - stageSide) * 0.5,
-            (SEC_AREA.height - stageSide) * 0.5,
-            stageSide,
-            stageSide,
-        );
-        ctxSec.restore();
-
-        ctxSec.drawImage(ctxStage.canvas,
-            0, 0,
-            stageSide, stageSide,
-            (SEC_AREA.width - stageSide) * 0.5,
-            (SEC_AREA.height - stageSide) * 0.5,
-            stageSide, stageSide,
-        );
-
-
-        ctxSec.drawImage(ctxTimer.canvas, 10, 10);
     }
-
 
     function drawScanlines(timestamp) {
         const scanlineHeight = 5;
@@ -1333,14 +1435,14 @@
         ctxSec.restore();
     }
 
+
     function updateCache() {
         prerenderLogo();
         prerenderKeyboard();
         prerenderKeyboardSeparator();
         prerenderStageLine();
-        prerenderDarkness();
-        prerenderTimer();
-        prerenderStage();
+        // renderDarkness();
+        // prerenderTimer();
     }
 
     function prerenderLogo() {
@@ -1472,7 +1574,34 @@
         });
     }
 
-    function prerenderDarkness() {
+    function createPadlock() {
+        ctxPadlock.translate(30, 10);
+        ctxPadlock.scale(0.75, 0.75);
+        ctxPadlock.strokeStyle = '#eeeeee';
+        ctxPadlock.lineCap = 'round';
+        ctxPadlock.shadowColor = '#000000';
+        ctxPadlock.shadowBlur = 10;
+        ctxPadlock.lineWidth = 4;
+
+        const p = new Path2D(`
+            M 80 65 h80 v60 h-80 v-60
+            
+            M 90  45 
+            A 30 30   0   1 1   150 45
+            v20 h-10 v-20
+            
+            A 20 20   0   1 0   100 45
+            v20 h-10 v-20
+            
+            M 115 100 A 12 12   0   1 1   125 100
+            v15 h-10 v-15
+            
+        `);
+
+        ctxPadlock.stroke(p, 'evenodd');
+    }
+
+    function renderDarkness() {
         const gridCellSize = 24;
         ctxDarkness.drawImage(ctxDarknessBase.canvas, 0, 0);
 
@@ -1501,9 +1630,10 @@
     }
 
     function prerenderTimer() {
-        ctxTimer.clearRect(0, 0, 150, 50);
+        ctxTimer.clearRect(0, 0, 150, 100);
 
         ctxTimer.strokeStyle = '#ce36ff';
+        ctxTimer.fillStyle = '#ce36ff';
         ctxTimer.lineWidth = 2;
         if (settings.isHq) {
             ctxTimer.shadowBlur = 10;
@@ -1514,14 +1644,54 @@
         ctxTimer.textBaseline = 'top';
         ctxTimer.textAlign = 'left';
 
-        const diff = (5 * 60 * 1000) - (Date.now() - gameState.levelTimerStart);
+        let diff = (5 * 60 * 1000) - (Date.now() - gameState.levelTimerStart);
+
+        if (diff < 0) {
+            diff = 0;
+        }
+
         const seconds = (fl(diff / 1000) % 60).toString().padStart(2, '0');
         const minutes = fl(diff / 1000 / 60);
 
-        ctxTimer.strokeText(`${minutes}:${seconds}`, 0, 0);
+        ctxTimer.strokeText(`TIME`, 0, 0);
+        ctxTimer.strokeText(`${minutes}:${seconds}`, 0, 50);
+
+        ctxTimer.fillText(`TIME`, 0, 0);
+        ctxTimer.fillText(`${minutes}:${seconds}`, 0, 50);
+
+        if (diff === 0) {
+            gameState.phase = 'GAMEOVER';
+        }
     }
 
-    function prerenderStage() {
+    function prerenderScore() {
+        ctxScore.clearRect(0, 0, 150, 100);
+
+        ctxScore.strokeStyle = '#ce36ff';
+        ctxScore.fillStyle = '#ce36ff';
+        ctxScore.lineWidth = 2;
+        if (settings.isHq) {
+            ctxScore.shadowBlur = 10;
+            ctxScore.shadowColor = '#ce36ff';
+        }
+        ctxScore.lineWidth = 1;
+        ctxScore.font = '50px monospace';
+        ctxScore.textBaseline = 'top';
+        ctxScore.textAlign = 'left';
+
+        const score = gameState.scoreList.reduce((sum, item) => {
+            return sum + item.points;
+        }, 0);
+
+        ctxScore.strokeText(`LOOT`, 0, 0);
+        ctxScore.strokeText(score, 0, 50);
+
+        ctxScore.fillText(`LOOT`, 0, 0);
+        ctxScore.fillText(score, 0, 50);
+    }
+
+
+    function renderStage() {
         ctxStage.save();
         const gridCellSize = 24;
 
@@ -1567,40 +1737,56 @@
         ctxStage.drawImage(imageSpace, (player.x + 0.1) * gridCellSize, (player.y + 0.1) * gridCellSize, gridCellSize * 0.8, gridCellSize * 0.8);
 
         // fog of war
-        prerenderDarkness();
+        renderDarkness();
 
         ctxStage.restore();
     }
 
     function drawWall(x, y, gridCellSize, strokeStyle, fillStyle) {
         ctxStage.fillStyle = fillStyle;
-        ctxStage.fillRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize)
+        ctxStage.fillRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize);
         ctxStage.strokeStyle = strokeStyle;
         ctxStage.strokeRect(x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize);
     }
 
+
+    function addToScore(newPoints) {
+        gameState.scoreList.push(newPoints);
+    }
+
+
     function playReignWin() {
-        const audioContext = new AudioContext();
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
+        const aCtx = new AudioContext();
+        const osc = aCtx.createOscillator();
+        const gain = aCtx.createGain();
         osc.connect(gain);
         osc.type = 'square';
-        gain.connect(audioContext.destination);
+        gain.connect(aCtx.destination);
         osc.start(0);
-        gain.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 1.5);
+        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 1.5);
     }
 
     function playWrongKey() {
-        const audioContext = new AudioContext();
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
+        const aCtx = new AudioContext();
+        const osc = aCtx.createOscillator();
+        const gain = aCtx.createGain();
         osc.connect(gain);
         osc.type = 'square';
-        osc.frequency.value = 180;
-        // gain.gain.value = 10;
-        gain.connect(audioContext.destination);
+        osc.frequency.value = '180';
+        gain.connect(aCtx.destination);
         osc.start(0);
-        gain.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 1.5);
+        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 1.5);
     }
 
+    function playOpenLock() {
+        const aCtx = new AudioContext();
+        const osc = aCtx.createOscillator();
+        const gain = aCtx.createGain();
+        osc.connect(gain);
+        osc.type = 'square';
+        osc.frequency.value = '840';
+        gain.connect(aCtx.destination);
+        osc.start(0);
+        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 2.5);
+    }
 })();
