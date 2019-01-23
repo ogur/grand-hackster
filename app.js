@@ -133,6 +133,7 @@
     const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
     const ctxScore = createCrx(150, 100);
     const ctxTimer = createCrx(150, 100);
+    const ctxStageMsg = createCrx(200, 100);
     const ctxPadlock = createCrx(240, 135);
 
     const imageSpace = document.querySelector('#sourceSpace');
@@ -280,10 +281,10 @@
 
             // placing locks
             let lockPlaced = 0;
-            for (let i = 0; lockPlaced < 5 && i < 400; i++) {
+            for (let i = 0; lockPlaced < 10 && i < 400; i++) {
                 const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
-                if (!point.isObstacle && !point.isEnd && !point.isStart && point.isRightPath && this.isDoorSpace(point.x, point.y)) {
-                    point.special = {type: 'LOCK', pattern: generateGoal(lockPlaced + 1), level: lockPlaced + 1};
+                if (!point.isObstacle && !point.isEnd && !point.isStart && this.isDoorSpace(point.x, point.y)) {
+                    point.special = {type: 'LOCK', pattern: generateGoal(fl(lockPlaced / 2) + 1), level: lockPlaced + 1};
                     point.isObstacle = true;
                     lockPlaced++;
                 }
@@ -363,7 +364,7 @@
 
     document.addEventListener('keyup', keyUpHandler);
 
-    const consoleArea = [];
+    let consoleArea = [];
     const consoleHumanData = [];
 
     let lastTimestampHeat = 0;
@@ -493,6 +494,13 @@
             ['', '', ''],
             ['', '', ''],
         ];
+        consoleArea = [];
+        ctxConsole.clearRect(
+            0,
+            0,
+            CONSOLE.width,
+            CONSOLE.height,
+        );
         gameState.missionCounter++;
 
         grid.generateStage();
@@ -917,6 +925,29 @@
                     }
                 }
             });
+
+            if (gameState.currentGoal) {
+                let isComplete = true;
+
+                loop2d(gameState.currentGoal.special.pattern, 3, 3, (val, x, y) => {
+                    if (val && gameState.areasReign[y][x] !== 'HUMAN') {
+                        isComplete = false;
+                    }
+                });
+
+                if (isComplete) {
+                    addToScore({
+                        label: `LOCK LVL ${gameState.currentGoal.special.level}`,
+                        points: gameState.currentGoal.special.level * 50,
+                    });
+                    gameState.currentGoal.isObstacle = false;
+                    gameState.currentGoal.special = null;
+                    gameState.currentGoal = null;
+
+                    renderStage();
+                    playOpenLock();
+                }
+            }
         }
     }
 
@@ -932,12 +963,14 @@
 
     function moveHandler(x, y, boundaryCond) {
         if (!boundaryCond) {
+            playWrongKey();
             return false;
         }
         if (!gameState.mainGoalComplete && grid.startPoint.x === x && grid.startPoint.y === y) {
-            // cannot end
+            playWrongKey();
         } else if (grid.stage[y][x].special && grid.stage[y][x].special.type === 'LOCK') {
-            switchToGoal(grid.stage[y][x])
+            switchToGoal(grid.stage[y][x]);
+            playWrongKey();
         } else if (!grid.stage[y][x].isObstacle) {
             switchToGoal(null);
             player.x = x;
@@ -1472,11 +1505,11 @@
 
     function drawStage(timestamp) {
         const gridCellSize = 24;
+        const stageSideOffset = 20;
         const stageSide = grid.side * gridCellSize;
-        const stageBgPanel = (SEC_AREA.width - stageSide) * 0.5;
+        const stageBgPanel = (stageSideOffset * 2 + stageSide);
 
-        drawStageBg(timestamp, 0, 0, stageBgPanel, SEC_AREA.height);
-        drawStageBg(timestamp, stageSide + stageBgPanel, 0, stageBgPanel, SEC_AREA.height);
+        drawStageBg(timestamp, stageBgPanel, 0, SEC_AREA.width - stageBgPanel, SEC_AREA.height);
 
 
         // main stage with glow
@@ -1487,7 +1520,7 @@
             ctxSec.shadowBlur = 10;
         }
         ctxSec.fillRect(
-            stageBgPanel,
+            stageSideOffset,
             (SEC_AREA.height - stageSide) * 0.5,
             stageSide,
             stageSide,
@@ -1497,15 +1530,20 @@
         ctxSec.drawImage(ctxStage.canvas,
             0, 0,
             stageSide, stageSide,
-            stageBgPanel,
+            stageSideOffset,
             (SEC_AREA.height - stageSide) * 0.5,
             stageSide, stageSide,
         );
 
         // timer
-        ctxSec.drawImage(ctxTimer.canvas, 10, 10);
+        ctxSec.drawImage(ctxTimer.canvas, stageBgPanel + 20, 10);
         // score
-        ctxSec.drawImage(ctxScore.canvas, 10 + stageSide + stageBgPanel, 10);
+        ctxSec.drawImage(ctxScore.canvas, stageBgPanel + 20, 160);
+
+        // stage msg
+        if (gameState.mainGoalComplete) {
+            ctxSec.drawImage(ctxStageMsg.canvas, stageBgPanel + 20, 310);
+        }
     }
 
     function drawStageBg(timestamp, x, y, width, height) {
@@ -1519,13 +1557,7 @@
         ctxSec.strokeStyle = '#0f7aff';
         ctxSec.lineWidth = 1;
 
-        ctxSec.clip(new Path2D(`
-        M ${x} ${y}
-        h ${width}
-        v ${height}
-        h-${width}
-        v-${height}
-        `));
+        ctxSec.clip(new Path2D(` M ${x} ${y} h ${width} v ${height} h-${width} v-${height} `));
         ctxSec.stroke(stageBgPath);
 
         ctxSec.save();
@@ -1571,8 +1603,7 @@
         prerenderKeyboard();
         prerenderKeyboardSeparator();
         prerenderStageLine();
-        // renderDarkness();
-        // prerenderTimer();
+        prerenderStageMsg();
     }
 
     function prerenderLogo() {
@@ -1707,7 +1738,7 @@
     function createPadlock() {
         ctxPadlock.translate(30, 10);
         ctxPadlock.scale(0.75, 0.75);
-        ctxPadlock.strokeStyle = '#eeeeee';
+        ctxPadlock.fillStyle = '#eeeeee';
         ctxPadlock.lineCap = 'round';
         ctxPadlock.shadowColor = '#000000';
         ctxPadlock.shadowBlur = 10;
@@ -1728,7 +1759,7 @@
             
         `);
 
-        ctxPadlock.stroke(p, 'evenodd');
+        ctxPadlock.fill(p, 'evenodd');
     }
 
     function renderDarkness() {
@@ -1745,8 +1776,6 @@
         });
 
         ctxDarkness.clearRect((player.x - 0.5) * gridCellSize, (player.y - 0.5) * gridCellSize, 2 * gridCellSize, 2 * gridCellSize);
-
-        ctxStage.drawImage(ctxDarkness.canvas, 0, 0);
 
         ctxStage.fillStyle = '#000';
         ctxStage.shadowColor = '#000';
@@ -1797,6 +1826,30 @@
         const minutes = fl(diff / 1000 / 60);
 
         return `${minutes}:${seconds}`;
+    }
+
+    function prerenderStageMsg() {
+        ctxStageMsg.clearRect(0, 0, 200, 100);
+
+        ctxStageMsg.strokeStyle = '#00ff30';
+        ctxStageMsg.fillStyle = '#00ff30';
+        ctxStageMsg.lineWidth = 2;
+        if (settings.isHq) {
+            ctxStageMsg.shadowBlur = 10;
+            ctxStageMsg.shadowColor = '#00ff30';
+        }
+        ctxStageMsg.lineWidth = 1;
+        ctxStageMsg.font = '50px monospace';
+        ctxStageMsg.textBaseline = 'top';
+        ctxStageMsg.textAlign = 'left';
+
+        const score = getCurrentScore();
+
+        ctxStageMsg.strokeText(`ESCAPE`, 0, 0);
+        ctxStageMsg.strokeText('NOW!', 0, 50);
+
+        ctxStageMsg.fillText(`ESCAPE`, 0, 0);
+        ctxStageMsg.fillText('NOW!', 0, 50);
     }
 
     function prerenderScore() {
@@ -1854,8 +1907,8 @@
 
         // path to the end
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
-            if (x === grid.endPoint.x && y === grid.endPoint.y) {
-                drawWall(x, y, gridCellSize, '#fa0e00', '#0000');
+            if (!gameState.mainGoalComplete && x === grid.endPoint.x && y === grid.endPoint.y) {
+                drawWall(x, y, gridCellSize, '#f9ff00', '#f9ff00');
             }
             if (point.isRightPath) {
                 ctxStage.strokeStyle = '#0cff34';
@@ -1866,7 +1919,8 @@
         // locks
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
             if (point.special) {
-                drawWall(x, y, gridCellSize, '#fa000a', '#9196b8');
+                drawWall(x, y, gridCellSize, '#fa000a', '#000');
+                ctxStage.drawImage(ctxPadlock.canvas, 80, 20, 80, 80, x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize);
             }
         });
 
