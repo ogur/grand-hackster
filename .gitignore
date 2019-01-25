@@ -5,7 +5,7 @@
 package-lock.json
 node_modules/
 
-grand-hackster.zip
+grand-hackster mmorszczyzna.zip
 
-dist/*
-!dist/.gitkeep
+build/*
+!build/.gitkeep

@@ -1109,7 +1109,7 @@
                 prerenderLoot();
             }
 
-            if (grid.endPoint.x === x && grid.endPoint.y === y) {
+            if (!gameState.mainGoalComplete && grid.endPoint.x === x && grid.endPoint.y === y) {
                 gameState.mainGoalComplete = true;
                 addToScore({
                     label: `MAIN CARGO`,
