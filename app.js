@@ -135,6 +135,7 @@
     const ctxTimer = createCrx(200, 100);
     const ctxStageMsg = createCrx(200, 100);
     const ctxPadlock = createCrx(240, 135);
+    const ctxNoise = createCrx(204, 204);
 
     const imageSpace = document.querySelector('#sourceSpace');
     const imageAbout = document.querySelector('#sourceAbout');
@@ -1649,7 +1650,7 @@
     }
 
 
-    function drawTransmission() {
+    function drawTransmission(timestamp) {
         ctxMain.save();
         if (settings.isHq) {
             ctxMain.shadowBlur = 3;
@@ -1657,23 +1658,39 @@
         ctxMain.shadowColor = '#ad0fbb';
 
         ctxMain.fillStyle = '#000208';
-        ctxMain.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
+        ctxMain.fillRect(TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
 
         if (!messageQueue) {
             ctxMain.restore();
             return;
         }
 
-        ctxMain.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
-        ctxMain.fillStyle = '#00ff24';
+        if (Date.now() - messageQueue.timestamp < 500 || Date.now() - messageQueue.timestamp > 3000) {
+            ctxNoise.fillStyle = '#42094b';
+            ctxNoise.fillRect(0, 0, 204, 204);
+            ctxNoise.fillStyle = '#780f87';
+            const dotSize = 2;
+            for (let y = 0; y < 204 / dotSize; y++) {
+                for (let x = 0; x < 204 / dotSize; x++) {
+                    if (Math.random() > 0.75) {
+                        ctxNoise.fillRect(x * dotSize, y * dotSize, dotSize, dotSize);
+                    }
+                }
+            }
+            ctxMain.drawImage(ctxNoise.canvas, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
+        } else {
+            ctxMain.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
 
-        ctxMain.textAlign = 'left';
-        ctxMain.font = '20px monospace';
+            ctxMain.fillStyle = '#00ff24';
 
-        const chunkedMsg = breakTextToLines(`> ${messageQueue.msg}`);
+            ctxMain.textAlign = 'left';
+            ctxMain.font = '20px monospace';
 
-        for (const lineIdx in chunkedMsg) {
-            ctxMain.fillText(chunkedMsg[lineIdx], TRANSMISSION.left + 15, TRANSMISSION.top + 35 * 2 + 204 + 24 * lineIdx);
+            const chunkedMsg = breakTextToLines(`> ${messageQueue.msg}`);
+
+            for (const lineIdx in chunkedMsg) {
+                ctxMain.fillText(chunkedMsg[lineIdx], TRANSMISSION.left + 15, TRANSMISSION.top + 35 * 2 + 204 + 24 * lineIdx);
+            }
         }
 
         ctxMain.restore();
