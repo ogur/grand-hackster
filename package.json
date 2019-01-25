@@ -5,7 +5,7 @@
     "terser": "^3.14.0"
   },
   "scripts": {
-    "build": "terser app.js -o app-min.js --config-file terser.config.json",
+    "build": "terser app.js -o dist/app-min.js --config-file terser.config.json",
     "get-sha-windows": "Get-FileHash -Algorithm SHA256 grand-hackster.zip"
   }
 }
