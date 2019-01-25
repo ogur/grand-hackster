@@ -5,5 +5,5 @@
 package-lock.json
 node_modules/
 
-dist/*
-!dist/.gitkeep
+app-min.js
+grand-hackster.zip

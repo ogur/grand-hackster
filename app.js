@@ -1200,10 +1200,18 @@
         ctxMain.restore();
     }
 
-    function drawAbout() {
+    function drawAbout(timestamp) {
         ctxMain.save();
 
         ctxMain.drawImage(imageAbout, 235, 300, 120, 160);
+
+        ctxMain.save();
+        ctxMain.globalAlpha = 1 - Math.cos((Math.PI / 180) * ((timestamp / 10) % 360));
+        ctxMain.shadowColor = '#ff0300';
+        ctxMain.shadowBlur = 3;
+        ctxMain.fillStyle = '#ff0300';
+        ctxMain.fillRect(235 + 90, 300 + 61, 3, 3);
+        ctxMain.restore();
 
         ctxMain.fillStyle = '#f9edff';
         if (settings.isHq) {
@@ -1237,7 +1245,7 @@
             70
         );
         const manualLines2 = breakTextToLines(
-            `Press any letter to fill the particular area of the console - you need to have more than 50% of ` +
+            `Press any letter on keyboard to fill the particular area of the console - you need to have more than 50% of ` +
             `that area to use that area as key to lock. Hold Shift and use WSAD to move your squad on the map. ` +
             `Hold Shift and use IKJL to move your console area selector. `,
             70
@@ -2207,6 +2215,7 @@
         osc.connect(gain);
         osc.type = type;
         osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.25, aCtx.currentTime);
         gain.connect(aCtx.destination);
         osc.start(0);
         gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + time);
@@ -2235,6 +2244,7 @@
         const osc2 = aCtx.createOscillator();
 
         const gain = aCtx.createGain();
+        gain.gain.setValueAtTime(0.25, aCtx.currentTime);
 
         osc.connect(gain);
         osc2.connect(gain);
