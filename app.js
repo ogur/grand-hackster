@@ -132,7 +132,7 @@
     const ctxDarknessBase = createCrx(SEC_AREA.width, SEC_AREA.height);
     const ctxDarkness = createCrx(SEC_AREA.width, SEC_AREA.height);
     const ctxScore = createCrx(150, 100);
-    const ctxTimer = createCrx(150, 100);
+    const ctxTimer = createCrx(200, 100);
     const ctxStageMsg = createCrx(200, 100);
     const ctxPadlock = createCrx(240, 135);
 
@@ -149,7 +149,7 @@
             this.side = 3 + 4 * stageCellSize;
         }
 
-        generateStage() {
+        generateStage(difficulty) {
             this.stage = [];
 
             for (let y = 0; y < this.side; y++) {
@@ -246,7 +246,7 @@
             }
             if (this.stage[this.endPoint.y][this.endPoint.x].dist === null) {
                 console.info('stage was unsolvable');
-                return this.generateStage();
+                return this.generateStage(difficulty);
             }
 
             this.stage[this.startPoint.y][this.startPoint.x] = {
@@ -254,6 +254,7 @@
                 dist: 0,
                 x: this.startPoint.x,
                 y: this.startPoint.y,
+                isStart: true,
             };
             this.stage[this.endPoint.y][this.endPoint.x].isEnd = true;
 
@@ -281,12 +282,40 @@
 
             // placing locks
             let lockPlaced = 0;
-            for (let i = 0; lockPlaced < 10 && i < 400; i++) {
+            for (let i = 0; lockPlaced < (10 + fl(difficulty / 2)) && i < 400; i++) {
                 const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
                 if (!point.isObstacle && !point.isEnd && !point.isStart && this.isDoorSpace(point.x, point.y)) {
-                    point.special = {type: 'LOCK', pattern: generateGoal(fl(lockPlaced / 2) + 1), level: lockPlaced + 1};
+                    point.special = {
+                        type: 'LOCK',
+                        pattern: generateGoal(fl(lockPlaced / 2) + 1),
+                        level: lockPlaced + 1,
+                    };
                     point.isObstacle = true;
                     lockPlaced++;
+                }
+            }
+
+            // placing extra loot
+            const letters = ['S', 'K', 'A', 'T', 'E'];
+            const desc = [
+                `We can escape anytime now.`,
+                `This should help you hack their locks.`,
+                `Our sensors have greater range now.`,
+                `It's connector to their alert system.`,
+                `Looks like target is that way.`,
+            ];
+            let lootPlaced = 0;
+            for (let i = 0; lootPlaced < 5 && i < 400; i++) {
+                const point = this.stage[randBetween(0, this.side)][randBetween(0, this.side)];
+                if (!point.isObstacle && !point.isEnd && !point.isStart) {
+                    point.special = {
+                        type: 'LOOT',
+                        level: lootPlaced + 1,
+                        label: letters[lootPlaced],
+                        desc: desc[lootPlaced],
+                    };
+                    point.isObstacle = false;
+                    lootPlaced++;
                 }
             }
         }
@@ -383,6 +412,7 @@
     };
     const settings = {
         isHq: true,
+        isMuted: false,
     };
     const gameState = {
         phase: 'INTRO',
@@ -397,11 +427,23 @@
         levelTimerStart: null,
         scoreList: [],
         mainGoalComplete: false,
-        timeForLevel: 5 * 60 * 1000,
+        timeForLevel: 3 * 60 * 1000,
+        timeFromAlert: 1.25 * 60 * 1000,
         levelFinishTime: null,
         loopStartTime: 0,
         missionCounter: 0,
+        isInTransitionStartTime: null,
+        isInTransition: false,
+        buffs: {
+            S: false, // open start
+            K: false, // keep small heat
+            A: false, // broader vision
+            T: false, // visible time
+            E: false, // path to end
+        },
     };
+
+    let messageQueue = null;
 
     const player = {
         x: 0,
@@ -487,6 +529,13 @@
         lastTimestampAreaReign = 0;
         lastTimestampEnemyGoal = 0;
         lastTimestampLevelTimer = 0;
+        gameState.buffs = {
+            S: false,
+            K: false,
+            A: false,
+            T: false,
+            E: false,
+        };
         gameState.levelTimerStart = Date.now();
         gameState.mainGoalComplete = false;
         gameState.areasReign = [
@@ -503,7 +552,7 @@
         );
         gameState.missionCounter++;
 
-        grid.generateStage();
+        grid.generateStage(gameState.missionCounter);
 
         player.x = grid.startPoint.x;
         player.y = grid.startPoint.y;
@@ -513,10 +562,12 @@
         gameState.currentEnemyPosition = generateEnemyPosition(6);
 
         renderStage();
+
+        addToMessageQueue(`Let's go!`);
     }
 
     function finishMission() {
-        gameState.levelFinishTime = Date.now();
+        gameState.levelFinishTime = gameState.isInTransitionStartTime;
         let remainingTimeDiff = gameState.timeForLevel - (gameState.levelFinishTime - gameState.levelTimerStart);
 
         remainingTimeDiff = Math.max(0, remainingTimeDiff);
@@ -537,6 +588,10 @@
 
     function keyDownHandler(event) {
         const keyName = event.key.toLowerCase();
+        if (gameState.isInTransition) {
+            return;
+        }
+
         if (!['f5', 'f11', 'f12'].includes(keyName)) {
             event.preventDefault();
         }
@@ -544,17 +599,30 @@
         if (keyName === '=') {
             settings.isHq = !settings.isHq;
             updateCache();
+            return;
+        }
+
+        if (keyName === '-') {
+            settings.isMuted = !settings.isMuted;
+            return;
         }
 
         if (gameState.phase === 'INTRO') {
             if (keyName === 'arrowdown' || keyName === 's') {
                 systemMenu.selectedItem = (systemMenu.selectedItem + 1) % systemMenu.list.length;
+                playMenuMove();
             } else if (keyName === 'arrowup' || keyName === 'w') {
                 systemMenu.selectedItem = (systemMenu.list.length + systemMenu.selectedItem - 1) % systemMenu.list.length;
+                playMenuMove();
             } else if (keyName === ' ') {
+                playMenuOk();
                 if (systemMenu.selectedItem === 0) {
-                    initMission();
-                    gameState.phase = 'GAME';
+                    return transitionTo(() => {
+                        initMission();
+                        gameState.phase = 'GAME';
+                    });
+                } else if (systemMenu.selectedItem === 1) {
+                    gameState.phase = 'MANUAL';
                 } else if (systemMenu.selectedItem === 2) {
                     gameState.phase = 'ABOUT';
                 }
@@ -563,6 +631,12 @@
         }
 
         if (gameState.phase === 'ABOUT') {
+            playMenuOk();
+            gameState.phase = 'INTRO';
+        }
+
+        if (gameState.phase === 'MANUAL') {
+            playMenuOk();
             gameState.phase = 'INTRO';
         }
 
@@ -618,31 +692,6 @@
                 if (event.shiftKey) {
                     selectedArea.y = null;
                     selectedArea.x = null;
-                } else if (gameState.currentGoal) {
-                    let isComplete = true;
-
-                    loop2d(gameState.currentGoal.special.pattern, 3, 3, (val, x, y) => {
-                        if (val && gameState.areasReign[y][x] !== 'HUMAN') {
-                            isComplete = false;
-                        }
-                    });
-
-                    if (isComplete) {
-                        addToScore({
-                            label: `LOCK LVL ${gameState.currentGoal.special.level}`,
-                            points: gameState.currentGoal.special.level * 50,
-                        });
-                        gameState.currentGoal.isObstacle = false;
-                        gameState.currentGoal.special = null;
-                        gameState.currentGoal = null;
-
-                        renderStage();
-                        playOpenLock();
-                    } else {
-                        playWrongKey();
-                    }
-
-                    return;
                 }
             }
 
@@ -659,6 +708,7 @@
                 key.heat = Math.min(key.heat + 1, HEAT.max);
                 if (key.heat === HEAT.max) {
                     key.isDestroyed = true;
+                    playDestroyKey();
                 }
 
                 const targetRow = selectedArea.y !== null ? selectedArea.y : key.y;
@@ -683,21 +733,31 @@
 
         if (gameState.phase === 'SUCCESS') {
             if (gameState.levelFinishTime + 2 * 1000 < Date.now()) {
-                initMission();
-                gameState.phase = 'GAME';
+                playMenuOk();
+                return transitionTo(() => {
+                    initMission();
+                    gameState.phase = 'GAME';
+                });
             }
         }
 
         if (gameState.phase === 'GAMEOVER') {
+            playMenuOk();
             if (gameState.levelFinishTime + 2 * 1000 < Date.now()) {
-                gameState.scoreList = [];
-                gameState.phase = 'INTRO';
+                return transitionTo(() => {
+                    gameState.scoreList = [];
+                    gameState.phase = 'INTRO';
+                });
             }
         }
     }
 
     function keyUpHandler(event) {
         const keyName = event.key.toLowerCase();
+
+        if (gameState.isInTransition) {
+            return;
+        }
 
         if (keyName === 'shift') {
             isModifierPressed = false;
@@ -828,7 +888,7 @@
 
 
     function main(timestamp) {
-        if (gameState.phase === 'GAME') {
+        if (gameState.phase === 'GAME' && !gameState.isInTransition) {
             levelTimer(timestamp);
 
             enemyGoalChange(timestamp);
@@ -841,7 +901,7 @@
 
 
     function levelTimer(timestamp) {
-        const levelTimerInterval = 210;
+        const levelTimerInterval = 16;
         if (timestamp - lastTimestampLevelTimer > levelTimerInterval) {
             lastTimestampLevelTimer = fl(timestamp / levelTimerInterval) * levelTimerInterval;
 
@@ -857,7 +917,7 @@
 
             for (const key of Object.keys(keys)) {
                 if (keys[key].heat > 0 && !keys[key].isDestroyed) {
-                    keys[key].heat = Math.max(keys[key].heat - 1, 0);
+                    keys[key].heat = Math.max(keys[key].heat - 1, gameState.buffs.K ? 6 : 0);
                 }
             }
             prerenderKeyboard();
@@ -881,7 +941,7 @@
 
             const point = grid.stage[randBetween(1, grid.side)][randBetween(1, grid.side)];
 
-            if (point.isVisited && rnd() > 0.95) {
+            if (point.isVisited && rnd() > (0.95 - gameState.missionCounter * 0.02)) {
                 point.isVisited = false;
                 renderStage();
             }
@@ -938,8 +998,9 @@
                 if (isComplete) {
                     addToScore({
                         label: `LOCK LVL ${gameState.currentGoal.special.level}`,
-                        points: gameState.currentGoal.special.level * 50,
+                        points: gameState.currentGoal.special.level * 20,
                     });
+                    addToMessageQueue(`Door is open, we're moving forward.`);
                     gameState.currentGoal.isObstacle = false;
                     gameState.currentGoal.special = null;
                     gameState.currentGoal = null;
@@ -956,7 +1017,7 @@
         if (timestamp - lastTimestampEnemyGoal > enemyGoalChangeInterval) {
             lastTimestampEnemyGoal = fl(timestamp / enemyGoalChangeInterval) * enemyGoalChangeInterval;
 
-            gameState.currentEnemyPosition = generateEnemyPosition(6);
+            gameState.currentEnemyPosition = generateEnemyPosition(5 + fl(gameState.missionCounter / 2));
         }
     }
 
@@ -966,10 +1027,11 @@
             playWrongKey();
             return false;
         }
-        if (!gameState.mainGoalComplete && grid.startPoint.x === x && grid.startPoint.y === y) {
+        if (!gameState.mainGoalComplete && !gameState.buffs.S && grid.startPoint.x === x && grid.startPoint.y === y) {
             playWrongKey();
         } else if (grid.stage[y][x].special && grid.stage[y][x].special.type === 'LOCK') {
             switchToGoal(grid.stage[y][x]);
+            addToMessageQueue(`There is a locked door, you must hack it.`);
             playWrongKey();
         } else if (!grid.stage[y][x].isObstacle) {
             switchToGoal(null);
@@ -978,19 +1040,34 @@
             if (!grid.stage[y][x].isVisited) {
                 addToScore({
                     label: 'LEVEL EXPLORATION',
-                    points: 2,
+                    points: 1,
                 });
             }
             grid.stage[y][x].isVisited = true;
 
+            if (grid.stage[y][x].special && grid.stage[y][x].special.type === 'LOOT') {
+
+                addToScore({
+                    label: `LOOT TYPE "${grid.stage[y][x].special.label}"`,
+                    points: grid.stage[y][x].special.level * 10,
+                });
+                addToMessageQueue(`We found some extra loot. ${grid.stage[y][x].special.desc}`);
+                gameState.buffs[grid.stage[y][x].special.label] = true;
+                grid.stage[y][x].special = null;
+                playLootTaken();
+            }
 
             if (grid.endPoint.x === x && grid.endPoint.y === y) {
                 gameState.mainGoalComplete = true;
+                playTargetFound();
             }
 
-            if (gameState.mainGoalComplete && grid.startPoint.x === x && grid.startPoint.y === y) {
-                gameState.phase = 'SUCCESS';
-                return finishMission();
+            if ((gameState.buffs.S || gameState.mainGoalComplete) && grid.startPoint.x === x && grid.startPoint.y === y) {
+                playEscape();
+                return transitionTo(() => {
+                    gameState.phase = 'SUCCESS';
+                    finishMission();
+                });
             }
 
             renderStage();
@@ -1046,7 +1123,13 @@
         }
 
         if (gameState.phase === 'ABOUT') {
+            drawLogo(timestamp);
             drawAbout(timestamp);
+        }
+
+        if (gameState.phase === 'MANUAL') {
+            drawLogo(timestamp);
+            drawManual(timestamp);
         }
 
         if (gameState.phase === 'GAME') {
@@ -1068,6 +1151,21 @@
         if (gameState.phase === 'SUCCESS') {
             drawWinMissionScreen(timestamp);
             drawSummaryScreen(timestamp);
+        }
+
+        if (gameState.isInTransition) {
+            const alpha = ((Date.now() - gameState.isInTransitionStartTime) / 1000);
+            ctxMain.save();
+            ctxMain.globalAlpha = alpha;
+            ctxMain.fillStyle = COLOR.bg;
+            ctxMain.fillRect(0, 0, MAIN_AREA.width, MAIN_AREA.height);
+            ctxMain.restore();
+
+            ctxSec.save();
+            ctxSec.globalAlpha = alpha;
+            ctxSec.fillStyle = COLOR.bg;
+            ctxSec.fillRect(0, 0, MAIN_AREA.width, MAIN_AREA.height);
+            ctxSec.restore();
         }
 
         if (settings.isHq) {
@@ -1118,6 +1216,65 @@
         ctxMain.fillText('Mateusz Morszczyzna', 235 + 120 + 20, 350 + 24);
         ctxMain.fillText('@mmorszczyna', 235 + 120 + 20, 350 + 48);
 
+
+        ctxMain.restore();
+    }
+
+    function drawManual() {
+        ctxMain.save();
+
+        ctxMain.fillStyle = '#f9edff';
+        if (settings.isHq) {
+            ctxMain.shadowColor = '#ad0fbb';
+            ctxMain.shadowBlur = 3;
+        }
+        ctxMain.textAlign = 'left';
+        ctxMain.font = '20px monospace';
+
+        const manualLines1 = breakTextToLines(
+            `Grand Hackster is a game about hacking by mashing your keyboard. You ` +
+            `need to aid group of mercenaries in effort to steal precious cargo from the alien ship. `,
+            70
+        );
+        const manualLines2 = breakTextToLines(
+            `Press any letter to fill the particular area of the console - you need to have more than 50% of ` +
+            `that area to use that area as key to lock. Hold Shift and use WSAD to move your squad on the map. ` +
+            `Hold Shift and use IKJL to move your console area selector. `,
+            70
+        );
+        const manualLines3 = breakTextToLines(
+            `Look for yellow box with $ - that's your main goal. ` +
+            `There are also black boxes with green letters - additional loot that provides some extra bonuses. `,
+            70
+        );
+        const manualLines4 = breakTextToLines(
+            `When you find the cargo quickly go back to green extraction point. ` +
+            `Hurry up! Time is ticking, you must complete your mission before enemy will get you.`,
+            70
+        );
+        const manualLines5 = breakTextToLines(
+            `Press "=" to change game quality - in case poor game performance. ` +
+            `Press "-" to mute sounds - in case you cannot stand my poor creations.`,
+            70
+        );
+
+        for (let lineIdx in manualLines1) {
+            ctxMain.fillText(manualLines1[lineIdx], 120, 100 + lineIdx * 24);
+        }
+        for (let lineIdx in manualLines2) {
+            ctxMain.fillText(manualLines2[lineIdx], 120, 200 + lineIdx * 24);
+        }
+        for (let lineIdx in manualLines3) {
+            ctxMain.fillText(manualLines3[lineIdx], 120, 350 + lineIdx * 24);
+        }
+        for (let lineIdx in manualLines4) {
+            ctxMain.fillText(manualLines4[lineIdx], 120, 450 + lineIdx * 24);
+        }
+        for (let lineIdx in manualLines5) {
+            ctxMain.fillText(manualLines5[lineIdx], 120, 550 + lineIdx * 24);
+        }
+
+        ctxMain.fillText('Happy hacking!', 120, 650);
 
         ctxMain.restore();
     }
@@ -1177,13 +1334,13 @@
         }, {}));
 
         ctxMain.fillText(
-            `${'TYPE'.padEnd(70, ' ')} ${'COUNT'.padStart(6, ' ')} ${'SUM'.padStart(10, ' ')}`,
+            `${'TYPE'.padEnd(40, ' ')} ${'COUNT'.padStart(6, ' ')} ${'SUM'.padStart(10, ' ')}`,
             MAIN_AREA.left + 50,
             MAIN_AREA.top + 80,
         );
 
         ctxMain.fillText(
-            `${'------'.padEnd(70, ' ')} ${'------'.padStart(6, ' ')} ${'------'.padStart(10, ' ')}`,
+            `${'------'.padEnd(40, ' ')} ${'------'.padStart(6, ' ')} ${'------'.padStart(10, ' ')}`,
             MAIN_AREA.left + 50,
             MAIN_AREA.top + 100,
         );
@@ -1191,7 +1348,7 @@
         for (let scoreIdx = 0; scoreIdx < scoreSummary.length; scoreIdx++) {
             const line = scoreSummary[scoreIdx];
             ctxMain.fillText(
-                `${line.label.padEnd(70, ' ')} ${line.count.toString().padStart(6, ' ')} ${line.points.toString().padStart(10, ' ')}`,
+                `${line.label.padEnd(40, ' ')} ${line.count.toString().padStart(6, ' ')} ${line.points.toString().padStart(10, ' ')}`,
                 MAIN_AREA.left + 50,
                 MAIN_AREA.top + 120 + scoreIdx * 20,
             );
@@ -1486,21 +1643,36 @@
 
     function drawTransmission() {
         ctxMain.save();
-        ctxMain.fillStyle = '#1e336e';
-        ctxMain.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
-
-        ctxMain.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
-        ctxMain.fillStyle = '#f9edff';
         if (settings.isHq) {
-            ctxMain.shadowColor = '#ad0fbb';
             ctxMain.shadowBlur = 3;
         }
+        ctxMain.shadowColor = '#ad0fbb';
+
+        ctxMain.fillStyle = '#000208';
+        ctxMain.fillRect(TRANSMISSION.left, TRANSMISSION.top, TRANSMISSION.width, TRANSMISSION.height);
+
+        if (!messageQueue) {
+            ctxMain.restore();
+            return;
+        }
+
+        ctxMain.drawImage(imageSpace, TRANSMISSION.left + 35, TRANSMISSION.top + 35, 204, 204);
+        ctxMain.fillStyle = '#00ff24';
+
         ctxMain.textAlign = 'left';
         ctxMain.font = '20px monospace';
-        ctxMain.fillText('Żołnierzu, dlaczego', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204);
-        ctxMain.fillText('nie naparzacie', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 24);
-        ctxMain.fillText('w klawiaturę!?', TRANSMISSION.left + 35, TRANSMISSION.top + 35 * 2 + 204 + 48);
+
+        const chunkedMsg = breakTextToLines(`> ${messageQueue.msg}`);
+
+        for (const lineIdx in chunkedMsg) {
+            ctxMain.fillText(chunkedMsg[lineIdx], TRANSMISSION.left + 15, TRANSMISSION.top + 35 * 2 + 204 + 24 * lineIdx);
+        }
+
         ctxMain.restore();
+
+        if (Date.now() - messageQueue.timestamp > 3500) {
+            messageQueue = null;
+        }
     }
 
     function drawStage(timestamp) {
@@ -1535,13 +1707,15 @@
             stageSide, stageSide,
         );
 
-        // timer
-        ctxSec.drawImage(ctxTimer.canvas, stageBgPanel + 20, 10);
         // score
-        ctxSec.drawImage(ctxScore.canvas, stageBgPanel + 20, 160);
+        ctxSec.drawImage(ctxScore.canvas, stageBgPanel + 20, 10);
+
+        // timer
+        ctxSec.drawImage(ctxTimer.canvas, stageBgPanel + 20, 160);
 
         // stage msg
         if (gameState.mainGoalComplete) {
+            addToMessageQueue(`Target secured, we're going back!`);
             ctxSec.drawImage(ctxStageMsg.canvas, stageBgPanel + 20, 310);
         }
     }
@@ -1769,9 +1943,13 @@
         // cutting visible
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
             if (point.isVisited) {
-                ctxDarkness.clearRect((x - 0.5) * gridCellSize, (y - 0.5) * gridCellSize, 2 * gridCellSize, 2 * gridCellSize);
-                ctxDarkness.clearRect((x - 1) * gridCellSize, (y) * gridCellSize, 3 * gridCellSize, gridCellSize);
-                ctxDarkness.clearRect((x) * gridCellSize, (y - 1) * gridCellSize, gridCellSize, 3 * gridCellSize);
+                if (gameState.buffs.A) {
+                    ctxDarkness.clearRect((x - 1.5) * gridCellSize, (y - 1.5) * gridCellSize, 4 * gridCellSize, 4 * gridCellSize);
+                } else {
+                    ctxDarkness.clearRect((x - 0.5) * gridCellSize, (y - 0.5) * gridCellSize, 2 * gridCellSize, 2 * gridCellSize);
+                    ctxDarkness.clearRect((x - 1) * gridCellSize, (y) * gridCellSize, 3 * gridCellSize, gridCellSize);
+                    ctxDarkness.clearRect((x) * gridCellSize, (y - 1) * gridCellSize, gridCellSize, 3 * gridCellSize);
+                }
             }
         });
 
@@ -1789,42 +1967,57 @@
     }
 
     function prerenderTimer() {
-        ctxTimer.clearRect(0, 0, 150, 100);
+        ctxTimer.clearRect(0, 0, 200, 100);
 
         ctxTimer.strokeStyle = '#ce36ff';
         ctxTimer.fillStyle = '#ce36ff';
         ctxTimer.lineWidth = 2;
         if (settings.isHq) {
             ctxTimer.shadowBlur = 10;
-            ctxTimer.shadowColor = '#ce36ff';
+            ctxTimer.shadowColor = '#ff0300';
         }
         ctxTimer.lineWidth = 1;
         ctxTimer.font = '50px monospace';
         ctxTimer.textBaseline = 'top';
         ctxTimer.textAlign = 'left';
 
-        let diff = gameState.timeForLevel - (Date.now() - gameState.levelTimerStart);
+        let timestampReference = gameState.isInTransition ? gameState.isInTransitionStartTime : Date.now();
+
+        let diff = gameState.timeForLevel - (timestampReference - gameState.levelTimerStart);
 
         if (diff < 0) {
             diff = 0;
         }
 
-        ctxTimer.strokeText(`TIME`, 0, 0);
-        ctxTimer.strokeText(formatTime(diff), 0, 50);
+        if (diff < gameState.timeFromAlert || gameState.buffs.T) {
+            if (diff < gameState.timeFromAlert) {
+                ctxTimer.strokeStyle = '#ff0300';
+                ctxTimer.fillStyle = '#ff0300';
+            }
 
-        ctxTimer.fillText(`TIME`, 0, 0);
-        ctxTimer.fillText(formatTime(diff), 0, 50);
+            ctxTimer.strokeText(`TIME`, 0, 0);
+            ctxTimer.strokeText(formatTime(diff, true), 0, 50);
 
-        if (diff === 0) {
-            gameState.phase = 'GAMEOVER';
-            finishMission();
+            ctxTimer.fillText(`TIME`, 0, 0);
+            ctxTimer.fillText(formatTime(diff, true), 0, 50);
+        }
+
+        if (diff === 0 && !gameState.isInTransition) {
+            return transitionTo(() => {
+                gameState.phase = 'GAMEOVER';
+                finishMission();
+            });
         }
     }
 
-    function formatTime(diff) {
+    function formatTime(diff, includeMs = false) {
+        const miliseconds = (diff % 1000).toString().padStart(3, '0').slice(0, 2);
         const seconds = (fl(diff / 1000) % 60).toString().padStart(2, '0');
         const minutes = fl(diff / 1000 / 60);
 
+        if (includeMs) {
+            return `${minutes}:${seconds}:${miliseconds}`;
+        }
         return `${minutes}:${seconds}`;
     }
 
@@ -1896,6 +2089,10 @@
         }
         ctxStage.shadowColor = '#c200b4';
 
+        ctxStage.font = '20px monospace';
+        ctxStage.textAlign = 'center';
+        ctxStage.textBaseline = 'middle';
+
         // visited path
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
             if (point.isObstacle) {
@@ -1909,8 +2106,18 @@
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
             if (!gameState.mainGoalComplete && x === grid.endPoint.x && y === grid.endPoint.y) {
                 drawWall(x, y, gridCellSize, '#f9ff00', '#f9ff00');
+                ctxStage.fillStyle = '#000';
+                ctxStage.fillText('$', (x + 0.5) * gridCellSize, (y + 0.6) * gridCellSize);
             }
-            if (point.isRightPath) {
+            if (x === grid.startPoint.x && y === grid.startPoint.y) {
+                if (gameState.mainGoalComplete || gameState.buffs.S) {
+                    drawWall(x, y, gridCellSize, '#0cff34', '#0cff34');
+                } else {
+                    drawWall(x, y, gridCellSize, '#c200b4', '#620009');
+                }
+
+            }
+            if (point.isRightPath && gameState.buffs.E) {
                 ctxStage.strokeStyle = '#0cff34';
                 ctxStage.strokeRect((x + 0.425) * gridCellSize, (y + 0.425) * gridCellSize, gridCellSize * 0.15, gridCellSize * 0.15)
             }
@@ -1918,9 +2125,18 @@
 
         // locks
         loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
-            if (point.special) {
+            if (point.special && point.special.type === 'LOCK') {
                 drawWall(x, y, gridCellSize, '#fa000a', '#000');
                 ctxStage.drawImage(ctxPadlock.canvas, 80, 20, 80, 80, x * gridCellSize, y * gridCellSize, gridCellSize, gridCellSize);
+            }
+        });
+
+        // loot
+        loop2d(grid.stage, grid.side, grid.side, (point, x, y) => {
+            if (point.special && point.special.type === 'LOOT') {
+                drawWall(x, y, gridCellSize, '#0f0', '#000');
+                ctxStage.fillStyle = '#0f0';
+                ctxStage.fillText(point.special.label, (x + 0.5) * gridCellSize, (y + 0.6) * gridCellSize);
             }
         });
 
@@ -1943,43 +2159,151 @@
     }
 
 
+    function transitionTo(cb) {
+        gameState.isInTransition = true;
+        gameState.isInTransitionStartTime = Date.now();
+        setTimeout(() => {
+            gameState.isInTransition = false;
+            cb();
+        }, 1000);
+    }
+
     function addToScore(newPoints) {
         gameState.scoreList.push(newPoints);
     }
 
 
-    function playReignWin() {
+    function addToMessageQueue(msg) {
+        let timestamp = Date.now();
+        messageQueue = {
+            msg,
+            timestamp,
+        };
+    }
+
+    function breakTextToLines(msg, lineLength = 22) {
+        const chunkedMsg = [''];
+
+        for (const word of msg.split(' ')) {
+            let currentLine = chunkedMsg[chunkedMsg.length - 1];
+
+            if (`${currentLine} ${word}`.length > lineLength) {
+                chunkedMsg.push(word);
+            } else {
+                chunkedMsg[chunkedMsg.length - 1] = `${currentLine} ${word}`.trim();
+            }
+        }
+
+        return chunkedMsg;
+    }
+
+    function playNote(freq, type, time) {
+        if (settings.isMuted) {
+            return;
+        }
         const aCtx = new AudioContext();
         const osc = aCtx.createOscillator();
         const gain = aCtx.createGain();
         osc.connect(gain);
-        osc.type = 'square';
+        osc.type = type;
+        osc.frequency.value = freq;
         gain.connect(aCtx.destination);
         osc.start(0);
-        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 1.5);
+        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + time);
+        osc.stop(aCtx.currentTime + time);
+    }
+
+    function playReignWin() {
+        playNote('440', 'square', 1.5);
     }
 
     function playWrongKey() {
-        const aCtx = new AudioContext();
-        const osc = aCtx.createOscillator();
-        const gain = aCtx.createGain();
-        osc.connect(gain);
-        osc.type = 'square';
-        osc.frequency.value = '180';
-        gain.connect(aCtx.destination);
-        osc.start(0);
-        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 1.5);
+        playNote('180', 'square', 1.5);
     }
 
     function playOpenLock() {
-        const aCtx = new AudioContext();
-        const osc = aCtx.createOscillator();
-        const gain = aCtx.createGain();
-        osc.connect(gain);
-        osc.type = 'square';
-        osc.frequency.value = '840';
-        gain.connect(aCtx.destination);
-        osc.start(0);
-        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 2.5);
+        playNote('840', 'square', 2.5);
     }
+
+    function playDestroyKey() {
+        if (settings.isMuted) {
+            return;
+        }
+        const aCtx = new AudioContext();
+
+        const osc = aCtx.createOscillator();
+        const osc2 = aCtx.createOscillator();
+
+        const gain = aCtx.createGain();
+
+        osc.connect(gain);
+        osc2.connect(gain);
+        gain.connect(aCtx.destination);
+
+        osc.type = 'square';
+        osc.frequency.value = '190';
+
+        osc.start(0);
+        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 1.5);
+        osc.stop(aCtx.currentTime + 1.5);
+
+        osc2.type = 'square';
+        osc2.frequency.value = '130';
+        osc2.start(0);
+
+        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 1.5);
+        osc2.stop(aCtx.currentTime + 1.5);
+    }
+
+    function playLootTaken() {
+        playNote('190', 'square', 1);
+        playNote('130', 'square', 1);
+        playNote('190', 'square', 1);
+    }
+
+    function playTargetFound() {
+        playNote('190', 'square', 0.5);
+        playNote('190', 'square', 0.5);
+
+        setTimeout(() => {
+            playNote('190', 'square', 0.5);
+            playNote('190', 'square', 0.5);
+
+            setTimeout(() => {
+                playNote('190', 'square', 1);
+            }, 2)
+        }, 2)
+    }
+
+    function playEscape() {
+        const aCtx = new AudioContext();
+        const gain = aCtx.createGain();
+
+        const bufferSize = 2 * aCtx.sampleRate;
+        const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+
+        for (var i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoise = aCtx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.start(0);
+
+        whiteNoise.connect(gain);
+        gain.connect(aCtx.destination);
+        gain.gain.setValueAtTime(0.00001, aCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(1, aCtx.currentTime + 1);
+        gain.gain.exponentialRampToValueAtTime(0.00001, aCtx.currentTime + 2);
+    }
+
+    function playMenuMove() {
+        playNote('300', 'sawtooth', 0.5);
+    }
+
+    function playMenuOk() {
+        playNote('600', 'triangle', 1.5);
+    }
+
 })();
